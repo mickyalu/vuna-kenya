@@ -48,7 +48,10 @@ export function HarvestTab() {
           </h2>
           <button
             type="button"
-            onClick={cancelProtocol}
+            onClick={() => {
+              cancelProtocol()
+              setActivityPillar(null)
+            }}
             className="text-[13px] font-semibold text-vuna-lime"
           >
             Cancel

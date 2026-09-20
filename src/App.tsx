@@ -1,4 +1,6 @@
+import { TransferSheet } from './components/TransferSheet'
 import { BottomNav } from './components/BottomNav'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { HarvestTab } from './components/HarvestTab'
 import { LockTab } from './components/LockTab'
 import { ProfileTab } from './components/ProfileTab'
@@ -28,8 +30,10 @@ function Shell() {
 
 export default function App() {
   return (
-    <VunaProvider>
-      <Shell />
-    </VunaProvider>
+    <ErrorBoundary>
+      <VunaProvider>
+        <Shell />
+      </VunaProvider>
+    </ErrorBoundary>
   )
 }

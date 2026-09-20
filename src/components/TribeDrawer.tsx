@@ -15,7 +15,7 @@ export function TribeDrawer() {
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65">
       <button type="button" className="absolute inset-0" aria-label="Close tribes" onClick={closeTribes} />
       <div className="relative max-h-[80svh] w-full max-w-[430px] overflow-y-auto rounded-t-[28px] border-t border-vuna-border bg-[#121212] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#333]" />

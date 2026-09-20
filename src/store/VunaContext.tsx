@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { parseKesInput } from '../lib/money'
+import { readStore, writeStore } from '../lib/storage'
 import {
   DEFAULT_PINNED,
   emptyPillarTotals,
@@ -26,7 +27,10 @@ import type {
 const GOAL_TARGET_KES = 43750
 
 function uid() {
-  return crypto.randomUUID()
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `vuna-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function emptyLine(): ProtocolLine {
@@ -134,15 +138,15 @@ const VunaContext = createContext<VunaState | null>(null)
 export function VunaProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>('harvest')
   const [deposits, setDeposits] = useState(87.5)
-  const [yieldEarned, setYieldEarned] = useState(8)
-  const [tickingYield, setTickingYield] = useState(0.1641)
+  const [yieldEarned] = useState(8)
+  const tickingYield = 0.1641
   const [lockMonths] = useState(12)
   const [daysRemaining] = useState(280)
   const [goalName] = useState('General Wealth')
   const [pillars, setPillars] = useState<Record<PillarId, number>>(emptyPillarTotals)
   const [pinnedPillars, setPinnedPillars] = useState<PillarId[]>(() => {
     try {
-      const raw = localStorage.getItem('vuna-pinned-pillars')
+      const raw = readStore('vuna-pinned-pillars')
       if (!raw) return [...DEFAULT_PINNED]
       const parsed = JSON.parse(raw) as PillarId[]
       const valid = parsed.filter((id) => PILLARS.includes(id))
@@ -159,11 +163,13 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [streak, setStreak] = useState(0)
   const [totalWins, setTotalWins] = useState(0)
   const [whatsappConnected, setWhatsappConnected] = useState(false)
-  const [wrapEnabled, setWrapEnabled] = useState(true)
+  const [wrapEnabled, setWrapEnabledState] = useState(
+    () => readStore('vuna-wrap') !== 'off',
+  )
   const [giftNotice, setGiftNotice] = useState<string | null>(null)
-  const [firstName, setFirstNameState] = useState(() => {
-    return localStorage.getItem('vuna-first-name') || 'Michael'
-  })
+  const [firstName, setFirstNameState] = useState(
+    () => readStore('vuna-first-name') || 'Michael',
+  )
   const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
   const [tribeDrawerOpen, setTribeDrawerOpen] = useState(false)
   const [lockPrompt, setLockPrompt] = useState<string | null>(null)
@@ -174,14 +180,6 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     error: null,
     success: null,
   })
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setTickingYield((v) => v + 0.0003)
-      setYieldEarned((v) => v + 0.0003)
-    }, 900)
-    return () => window.clearInterval(id)
-  }, [])
 
   useEffect(() => {
     if (!lockPrompt) return
@@ -317,7 +315,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const setFirstName = useCallback((name: string) => {
     const next = name.trim() || 'Michael'
     setFirstNameState(next)
-    localStorage.setItem('vuna-first-name', next)
+    writeStore('vuna-first-name', next)
+  }, [])
+
+  const setWrapEnabled = useCallback((v: boolean) => {
+    setWrapEnabledState(v)
+    writeStore('vuna-wrap', v ? 'on' : 'off')
   }, [])
 
   const setActiveTribe = useCallback((id: PillarId) => {
@@ -352,7 +355,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         next[existing] = prev[slot]
       }
       next[slot] = id
-      localStorage.setItem('vuna-pinned-pillars', JSON.stringify(next))
+      writeStore('vuna-pinned-pillars', JSON.stringify(next))
       return next
     })
   }, [])

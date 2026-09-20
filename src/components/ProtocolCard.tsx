@@ -1,8 +1,10 @@
 import { KesAmount } from './KesAmount'
+import { useYieldTick } from '../lib/useYieldTick'
 import { useVuna } from '../store/VunaContext'
 
 export function ProtocolCard() {
   const { deposits, tickingYield, goalName, progressPct, firstName } = useVuna()
+  const liveTick = useYieldTick(tickingYield)
 
   return (
     <section className="relative overflow-hidden rounded-[22px] border border-[#2a3600] bg-[#141414] px-5 pb-4 pt-4">
@@ -40,7 +42,7 @@ export function ProtocolCard() {
         <p className="shrink-0 text-[11px] font-medium text-vuna-mint">
           +
           <KesAmount
-            value={tickingYield}
+            value={liveTick}
             digits={4}
             tone="mint"
             className="text-[11px] font-medium"

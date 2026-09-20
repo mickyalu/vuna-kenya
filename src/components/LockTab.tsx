@@ -1,5 +1,6 @@
 import { ChevronRight, Send } from 'lucide-react'
 import { KesAmount } from './KesAmount'
+import { useYieldTick } from '../lib/useYieldTick'
 import { useVuna } from '../store/VunaContext'
 
 export function LockTab() {
@@ -8,11 +9,12 @@ export function LockTab() {
     progressPct,
     lockMonths,
     daysRemaining,
-    estimatedHarvest,
     deposits,
     yieldEarned,
     openTransfer,
   } = useVuna()
+  const liveYield = useYieldTick(yieldEarned, 0.0003, 1200)
+  const liveHarvest = deposits + liveYield
 
   return (
     <div className="space-y-5 pb-4">
@@ -51,7 +53,7 @@ export function LockTab() {
           ESTIMATED HARVEST
         </p>
         <p className="mt-2 leading-none">
-          <KesAmount value={estimatedHarvest} tone="mint" className="text-[40px] leading-none" />
+          <KesAmount value={liveHarvest} tone="mint" className="text-[40px] leading-none" />
         </p>
         <div className="mt-5 space-y-2 text-[14px]">
           <div className="flex items-center justify-between">
@@ -60,7 +62,7 @@ export function LockTab() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-vuna-muted">Yield earned</span>
-            <KesAmount value={yieldEarned} tone="mint" className="text-[15px]" />
+            <KesAmount value={liveYield} tone="mint" className="text-[15px]" />
           </div>
         </div>
       </section>

@@ -8,7 +8,7 @@ export function TransferSheet() {
   if (!transfer.open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 sm:items-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 sm:items-center">
       <div className="w-full max-w-[430px] rounded-t-3xl border border-vuna-border bg-vuna-card p-5 sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
