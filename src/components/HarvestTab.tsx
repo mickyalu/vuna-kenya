@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { KesAmount } from './KesAmount'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
-import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
 import { ActivitySheet } from './ActivitySheet'
 import { LiveProtocols } from './LiveProtocols'
@@ -15,7 +14,7 @@ export function HarvestTab() {
     pillars,
     promotePillar,
     chooseActivity,
-    activeTribePillar,
+    activeClub,
     openTribes,
     avatarUrl,
     cardName,
@@ -23,7 +22,7 @@ export function HarvestTab() {
   const [swapSlot, setSwapSlot] = useState(0)
   const [activityPillar, setActivityPillar] = useState<PillarId | null>(null)
 
-  const tribe = TRIBES[activeTribePillar]
+  const tribe = activeClub
 
   return (
     <div className="space-y-3 pb-4">

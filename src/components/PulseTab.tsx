@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Gift, Heart } from 'lucide-react'
 import { monthLabel } from '../lib/avatars'
-import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
 import { PersonAvatar } from './PersonAvatar'
 import { TribeChip } from './TribeChip'
@@ -23,16 +22,15 @@ export function PulseTab() {
     salute,
     openGift,
     replyGift,
-    liveFriends,
     leaders,
-    activeTribePillar,
+    activeClub,
     openTribes,
     avatarUrl,
     cardName,
     monthlyVunas,
   } = useVuna()
 
-  const tribe = TRIBES[activeTribePillar]
+  const tribe = activeClub
   const youHandle = `@${cardName}`
 
   return (
@@ -54,7 +52,7 @@ export function PulseTab() {
           youName={cardName}
         />
         <p className="min-w-0 flex-1 text-[12px] leading-snug text-vuna-muted">
-          {tribe.line} Tap the circle to sit with them.
+          {tribe.line} Tap the circle to join, sit, or create a tribe.
         </p>
       </div>
 
@@ -86,7 +84,7 @@ export function PulseTab() {
       <div className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-3">
         <p className="flex items-start gap-2 text-[13px] leading-snug text-vuna-mint">
           <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-vuna-mint" />
-          Live: {liveFriends} of your friends are active in {tribe.name}
+          Live: {tribe.live} in {tribe.name} now
         </p>
       </div>
 

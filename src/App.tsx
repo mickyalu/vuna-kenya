@@ -12,7 +12,6 @@ import { HarvestTab } from './components/HarvestTab'
 import { LockTab } from './components/LockTab'
 import { ProfileTab } from './components/ProfileTab'
 import { PulseTab } from './components/PulseTab'
-import { TribeDrawer } from './components/TribeDrawer'
 import { VunaProvider, useVuna } from './store/VunaContext'
 
 function Shell() {
@@ -38,7 +37,6 @@ function Shell() {
         <GiftSheet />
         <NoticeInbox />
         <CongratsToast />
-        <TribeDrawer />
       </div>
     </div>
   )

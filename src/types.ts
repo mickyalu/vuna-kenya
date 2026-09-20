@@ -72,7 +72,7 @@ export type Composer = {
   error: string | null
 }
 
-export type NoticeKind = 'stk' | 'gift_in' | 'gift_sent' | 'gift_reply'
+export type NoticeKind = 'stk' | 'gift_in' | 'gift_sent' | 'gift_reply' | 'tribe'
 
 export type InAppNotice = {
   id: string

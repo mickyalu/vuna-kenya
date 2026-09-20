@@ -16,6 +16,12 @@ export type Tribe = {
   members: TribeMember[]
 }
 
+export type Club = Tribe & {
+  id: string
+  inviteSlug: string
+  createdByYou?: boolean
+}
+
 function mate(name: keyof typeof FACE_PHOTOS, initials: string, tone: string): TribeMember {
   return { name, initials, tone, photo: FACE_PHOTOS[name] }
 }
@@ -141,4 +147,61 @@ export const TRIBES: Record<PillarId, Tribe> = {
     line: 'The plate you can name.',
     members: [mate('Awino', 'AW', '#c4a574'), mate('Ken', 'KE', '#5c4a38')],
   },
+}
+
+export function slugify(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tribe'
+}
+
+export function uniqueInviteSlug(name: string, taken: Iterable<string>) {
+  const used = new Set(taken)
+  const base = slugify(name)
+  if (!used.has(base)) return base
+  let n = 2
+  while (used.has(`${base}-${n}`)) n += 1
+  return `${base}-${n}`
+}
+
+export function clubFromTribe(tribe: Tribe, id: string = tribe.pillar): Club {
+  return {
+    ...tribe,
+    id,
+    inviteSlug: slugify(tribe.name),
+  }
+}
+
+export const CATALOG_CLUBS: Club[] = (Object.keys(TRIBES) as PillarId[]).map((id) =>
+  clubFromTribe(TRIBES[id], id),
+)
+
+export function inviteUrl(club: Club) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/'
+  return `${origin}${path}?join=${encodeURIComponent(club.inviteSlug)}`
+}
+
+export async function shareInvite(club: Club) {
+  const url = inviteUrl(club)
+  const text = `Join ${club.name} on VUNA — we lock KES against habits.`
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ title: `${club.name} on VUNA`, text, url })
+      return { url, shared: true as const }
+    } catch {
+      /* cancelled or unsupported */
+    }
+  }
+  try {
+    await navigator.clipboard?.writeText(url)
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== 'undefined') {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
+  return { url, shared: false as const }
 }

@@ -13,3 +13,22 @@ export function writeStore(key: string, value: string) {
     /* private mode / blocked storage */
   }
 }
+
+export function readJson<T>(key: string, fallback: T): T {
+  const raw = readStore(key)
+  if (!raw) return fallback
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return fallback
+  }
+}
+
+export function clearVunaStore() {
+  try {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith('vuna-'))
+    for (const key of keys) localStorage.removeItem(key)
+  } catch {
+    /* blocked */
+  }
+}

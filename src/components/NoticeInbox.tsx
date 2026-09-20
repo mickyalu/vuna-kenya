@@ -1,4 +1,4 @@
-import { Check, Gift, MessageCircle, X } from 'lucide-react'
+import { Check, Gift, MessageCircle, Users, X } from 'lucide-react'
 import { useVuna } from '../store/VunaContext'
 
 export function NoticeInbox() {
@@ -33,6 +33,8 @@ export function NoticeInbox() {
                   if (item.kind === 'gift_in' || item.kind === 'gift_sent' || item.kind === 'gift_reply') {
                     setTab('pulse')
                     setPulseTab('feed')
+                  } else if (item.kind === 'tribe') {
+                    setTab('profile')
                   }
                 }}
                 className="flex w-full items-start gap-3 rounded-2xl bg-vuna-raised px-3 py-3 text-left"
@@ -42,6 +44,8 @@ export function NoticeInbox() {
                     <MessageCircle size={14} />
                   ) : item.kind === 'stk' ? (
                     <Check size={14} />
+                  ) : item.kind === 'tribe' ? (
+                    <Users size={14} />
                   ) : (
                     <Gift size={14} />
                   )}

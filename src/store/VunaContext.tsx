@@ -8,9 +8,16 @@ import {
   type ReactNode,
 } from 'react'
 import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
+import {
+  CATALOG_CLUBS,
+  clubFromTribe,
+  shareInvite,
+  uniqueInviteSlug,
+  type Club,
+} from '../lib/tribes'
 import { parseKesInput } from '../lib/money'
 import { describeNotify } from '../lib/notify'
-import { readStore, writeStore } from '../lib/storage'
+import { clearVunaStore, readJson, readStore, writeStore } from '../lib/storage'
 import {
   DEFAULT_PINNED,
   emptyPillarTotals,
@@ -208,6 +215,16 @@ type VunaState = {
   toggleBalanceHidden: () => void
   activeTribePillar: PillarId
   setActiveTribe: (id: PillarId) => void
+  clubs: Club[]
+  joinedIds: string[]
+  activeClub: Club
+  setActiveClub: (id: string) => void
+  joinClub: (id: string) => void
+  leaveClub: (id: string) => void
+  createClub: (input: { name: string; line: string; pillar: PillarId }) => void
+  inviteClub: (id: string) => void
+  optOutTribes: () => void
+  eraseDevice: () => void
   chooseActivity: (pillar: PillarId, activity: string) => void
   composer: Composer
   updateComposer: (patch: Partial<Composer>) => void
@@ -215,9 +232,7 @@ type VunaState = {
   sendComposerStk: () => void
   notice: InAppNotice | null
   dismissNotice: () => void
-  tribeDrawerOpen: boolean
   openTribes: () => void
-  closeTribes: () => void
   lockPrompt: string | null
   liveOpen: boolean
   setLiveOpen: (open: boolean) => void
@@ -280,7 +295,14 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     () => readStore('vuna-hide-balance') === 'on',
   )
   const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
-  const [tribeDrawerOpen, setTribeDrawerOpen] = useState(false)
+  const [customClubs, setCustomClubs] = useState<Club[]>(() => readJson<Club[]>('vuna-custom-clubs', []))
+  const [joinedIds, setJoinedIds] = useState<string[]>(() => {
+    const stored = readJson<string[]>('vuna-joined-clubs', ['FITNESS'])
+    return stored.length ? stored : ['FITNESS']
+  })
+  const [activeClubId, setActiveClubId] = useState(
+    () => readStore('vuna-active-club') || 'FITNESS',
+  )
   const [lockPrompt, setLockPrompt] = useState<string | null>(null)
   const [liveOpen, setLiveOpen] = useState(false)
   const [avatarId, setAvatarIdState] = useState(() => {
@@ -330,6 +352,35 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(id)
   }, [])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('join')
+    if (!token) return
+    const custom = readJson<Club[]>('vuna-custom-clubs', [])
+    const club = [...CATALOG_CLUBS, ...custom].find((c) => c.inviteSlug === token || c.id === token)
+    if (club) {
+      setJoinedIds((prev) => {
+        const next = prev.includes(club.id) ? prev : [...prev, club.id]
+        writeStore('vuna-joined-clubs', JSON.stringify(next))
+        return next
+      })
+      setActiveClubId(club.id)
+      writeStore('vuna-active-club', club.id)
+      setActiveTribePillar(club.pillar)
+      setTab('profile')
+      const item = {
+        id: uid(),
+        kind: 'tribe' as const,
+        title: `Joined ${club.name}`,
+        body: 'You are in the circle. Invite from Profile when you want more people.',
+        unread: true,
+      }
+      setInbox((prev) => [item, ...prev])
+      setNotice(item)
+    }
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [])
+
   const commitmentTotal = useMemo(
     () =>
       lines
@@ -340,6 +391,19 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   const estimatedHarvest = deposits + yieldEarned
   const progressPct = Math.min(100, (deposits / GOAL_TARGET_KES) * 100)
+
+  const clubs = useMemo(() => {
+    const extra = customClubs.filter((club) => !CATALOG_CLUBS.some((item) => item.id === club.id))
+    return [...CATALOG_CLUBS, ...extra]
+  }, [customClubs])
+
+  const activeClub = useMemo(() => {
+    return (
+      clubs.find((club) => club.id === activeClubId) ||
+      clubs.find((club) => joinedIds.includes(club.id)) ||
+      CATALOG_CLUBS[0]
+    )
+  }, [clubs, activeClubId, joinedIds])
 
   const updateLine = useCallback((id: string, patch: Partial<ProtocolLine>) => {
     setLines((prev) => prev.map((line) => (line.id === id ? { ...line, ...patch } : line)))
@@ -633,6 +697,146 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     [feed, cardName],
   )
 
+  const setActiveClub = useCallback(
+    (id: string) => {
+      const club = clubs.find((item) => item.id === id)
+      if (!club) return
+      setActiveClubId(id)
+      writeStore('vuna-active-club', id)
+      setActiveTribePillar(club.pillar)
+    },
+    [clubs],
+  )
+
+  const joinClub = useCallback(
+    (id: string) => {
+      const club = clubs.find((item) => item.id === id)
+      if (!club) return
+      setJoinedIds((prev) => {
+        const next = prev.includes(id) ? prev : [...prev, id]
+        writeStore('vuna-joined-clubs', JSON.stringify(next))
+        return next
+      })
+      setActiveClubId(id)
+      writeStore('vuna-active-club', id)
+      setActiveTribePillar(club.pillar)
+      pushNotice({
+        id: uid(),
+        kind: 'tribe',
+        title: `Joined ${club.name}`,
+        body: `${club.live} people live. Invite when you want the circle bigger.`,
+        unread: true,
+      })
+    },
+    [clubs, pushNotice],
+  )
+
+  const leaveClub = useCallback(
+    (id: string) => {
+      setJoinedIds((prev) => {
+        const next = prev.filter((item) => item !== id)
+        writeStore('vuna-joined-clubs', JSON.stringify(next))
+        if (activeClubId === id) {
+          const fallback = next[0] || 'FITNESS'
+          setActiveClubId(fallback)
+          writeStore('vuna-active-club', fallback)
+          const club = clubs.find((item) => item.id === fallback)
+          if (club) setActiveTribePillar(club.pillar)
+        }
+        return next
+      })
+    },
+    [activeClubId, clubs],
+  )
+
+  const inviteClub = useCallback(
+    (id: string) => {
+      const club = clubs.find((item) => item.id === id)
+      if (!club) return
+      void shareInvite(club)
+      pushNotice({
+        id: uid(),
+        kind: 'tribe',
+        title: 'Invite link ready',
+        body: `Share ${club.name} with friends. Link is copied; WhatsApp opens if share is cancelled.`,
+        unread: true,
+      })
+    },
+    [clubs, pushNotice],
+  )
+
+  const createClub = useCallback(
+    (input: { name: string; line: string; pillar: PillarId }) => {
+      const name = input.name.trim()
+      if (!name) return
+      const id = `club-${uid()}`
+      const you = avatarUrl
+        ? {
+            initials: `${(firstName[0] || 'M').toUpperCase()}${lastInitial}`,
+            tone: '#6b4f3a',
+            name: cardName,
+            photo: avatarUrl,
+          }
+        : null
+      const club: Club = {
+        ...clubFromTribe(
+          {
+            pillar: input.pillar,
+            name,
+            line: input.line.trim() || 'A VUNA circle.',
+            live: 1,
+            members: you ? [you] : [],
+          },
+          id,
+        ),
+        createdByYou: true,
+        inviteSlug: uniqueInviteSlug(
+          name,
+          clubs.map((item) => item.inviteSlug),
+        ),
+      }
+      setCustomClubs((prev) => {
+        const next = [...prev, club]
+        writeStore('vuna-custom-clubs', JSON.stringify(next))
+        return next
+      })
+      setJoinedIds((prev) => {
+        const next = prev.includes(club.id) ? prev : [...prev, club.id]
+        writeStore('vuna-joined-clubs', JSON.stringify(next))
+        return next
+      })
+      setActiveClubId(club.id)
+      writeStore('vuna-active-club', club.id)
+      setActiveTribePillar(club.pillar)
+      void shareInvite(club)
+      pushNotice({
+        id: uid(),
+        kind: 'tribe',
+        title: `${club.name} is live`,
+        body: 'Invite link copied. Send it to friends or a community — same motion as a Strava club.',
+        unread: true,
+      })
+    },
+    [avatarUrl, cardName, clubs, firstName, lastInitial, pushNotice],
+  )
+
+  const optOutTribes = useCallback(() => {
+    setJoinedIds([])
+    writeStore('vuna-joined-clubs', JSON.stringify([]))
+    pushNotice({
+      id: uid(),
+      kind: 'tribe',
+      title: 'Left all tribes',
+      body: 'Join again from Profile whenever you want the circle.',
+      unread: true,
+    })
+  }, [pushNotice])
+
+  const eraseDevice = useCallback(() => {
+    clearVunaStore()
+    window.location.reload()
+  }, [])
+
   const connectWhatsApp = useCallback(() => {
     setWhatsappConnected(true)
   }, [])
@@ -694,6 +898,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   const setActiveTribe = useCallback((id: PillarId) => {
     setActiveTribePillar(id)
+    setActiveClubId(id)
+    writeStore('vuna-active-club', id)
   }, [])
 
   const chooseActivity = useCallback((pillar: PillarId, activity: string) => {
@@ -794,12 +1000,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [composer, mpesaPhone, cardName, avatarUrl, streak])
 
   const openTribes = useCallback(() => {
-    setTab('pulse')
-    setTribeDrawerOpen(true)
-  }, [])
-
-  const closeTribes = useCallback(() => {
-    setTribeDrawerOpen(false)
+    setTab('profile')
+    window.setTimeout(() => {
+      document.getElementById('vuna-tribes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
   }, [])
 
   const promotePillar = useCallback((id: PillarId, slot: number) => {
@@ -921,6 +1125,16 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     toggleBalanceHidden,
     activeTribePillar,
     setActiveTribe,
+    clubs,
+    joinedIds,
+    activeClub,
+    setActiveClub,
+    joinClub,
+    leaveClub,
+    createClub,
+    inviteClub,
+    optOutTribes,
+    eraseDevice,
     chooseActivity,
     composer,
     updateComposer,
@@ -928,9 +1142,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     sendComposerStk,
     notice,
     dismissNotice,
-    tribeDrawerOpen,
     openTribes,
-    closeTribes,
     lockPrompt,
     liveOpen,
     setLiveOpen,
