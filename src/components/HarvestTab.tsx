@@ -2,15 +2,15 @@ import { ChevronDown, Plus, Send } from 'lucide-react'
 import { useState } from 'react'
 import { KesAmount } from './KesAmount'
 import { PILLAR_CATALOG, PILLARS, type PillarId } from '../lib/pillars'
+import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
+import { ActivitySheet } from './ActivitySheet'
 import { PillarDrawer } from './PillarDrawer'
+import { ProtocolCard } from './ProtocolCard'
+import { TribeChip } from './TribeChip'
 
 export function HarvestTab() {
   const {
-    deposits,
-    tickingYield,
-    goalName,
-    progressPct,
     lines,
     updateLine,
     addLine,
@@ -21,50 +21,27 @@ export function HarvestTab() {
     pillars,
     pinnedPillars,
     promotePillar,
+    chooseActivity,
+    setActiveTribe,
+    activeTribePillar,
+    openTribes,
+    lockPrompt,
   } = useVuna()
   const [swapSlot, setSwapSlot] = useState(0)
+  const [activityPillar, setActivityPillar] = useState<PillarId | null>(null)
 
   const dropdownPillars = [
     ...pinnedPillars,
     ...PILLARS.filter((id) => !pinnedPillars.includes(id)),
   ]
 
+  const tribe = TRIBES[activeTribePillar]
+
   return (
     <div className="space-y-5 pb-4">
-      <section className="rounded-[22px] border border-[#2f3f00] bg-vuna-card px-5 pb-5 pt-6">
-        <p className="text-center text-[11px] font-semibold tracking-[0.22em] text-vuna-muted">
-          VUNA PROTOCOL BALANCE
-        </p>
-        <p className="mt-2 text-center leading-none">
-          <KesAmount value={deposits} className="text-[48px] leading-none" />
-        </p>
-        <p className="mt-4 text-center text-[12px] tracking-[0.12em] text-vuna-muted">
-          FOR:{' '}
-          <span className="font-semibold tracking-[0.16em] text-white">
-            {goalName.toUpperCase()}
-          </span>
-        </p>
-        <div className="mt-5 flex items-center gap-3">
-          <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-[#2a2a2a]">
-            <div
-              className="h-full rounded-full bg-vuna-lime"
-              style={{ width: `${Math.max(progressPct, 8)}%` }}
-            />
-          </div>
-          <p className="shrink-0 text-[12px] font-medium text-vuna-mint">
-            +
-            <KesAmount
-              value={tickingYield}
-              digits={4}
-              tone="mint"
-              className="text-[12px] font-medium"
-            />{' '}
-            Yield Ticking
-          </p>
-        </div>
-      </section>
+      <ProtocolCard />
 
-      <section className="rounded-[22px] border border-vuna-border bg-vuna-card p-4">
+      <section id="protocol-entry" className="rounded-[22px] border border-vuna-border bg-vuna-card p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[13px] font-extrabold tracking-[0.08em] text-white">
             QUICK PROTOCOL ENTRY
@@ -77,6 +54,10 @@ export function HarvestTab() {
             Cancel
           </button>
         </div>
+
+        {lockPrompt ? (
+          <p className="mb-3 text-[12px] leading-snug text-vuna-mint">{lockPrompt}</p>
+        ) : null}
 
         <div className="space-y-3">
           {lines.map((line) => (
@@ -161,12 +142,15 @@ export function HarvestTab() {
       </section>
 
       <section>
-        <h2 className="mb-1 text-[15px] font-extrabold tracking-[0.14em] text-white">
+        <h2 className="text-[15px] font-extrabold tracking-[0.14em] text-white">
           ATOMIC HABIT PILLARS
         </h2>
-        <p className="mb-3 text-[12px] text-vuna-muted">
-          Four mains on the board. Open the drawer to swap in Relationship, Finances, and more.
+        <p className="mt-1 text-[12px] text-vuna-muted">
+          Tap a card. Pick the move. Then lock KES.
         </p>
+        <div className="mb-3 mt-3">
+          <TribeChip tribe={tribe} onClick={openTribes} />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {pinnedPillars.map((id, slot) => {
             const meta = PILLAR_CATALOG[id]
@@ -175,18 +159,15 @@ export function HarvestTab() {
               <button
                 key={`${id}-${slot}`}
                 type="button"
-                onClick={() => setSwapSlot(slot)}
+                onClick={() => {
+                  setSwapSlot(slot)
+                  setActivityPillar(id)
+                }}
                 className={`rounded-[22px] border px-3 pb-4 pt-5 text-center transition ${
-                  selected
-                    ? 'border-vuna-lime bg-vuna-card'
-                    : 'border-vuna-border bg-vuna-card'
+                  selected ? 'border-vuna-lime bg-vuna-card' : 'border-vuna-border bg-vuna-card'
                 }`}
               >
-                <KesAmount
-                  value={pillars[id]}
-                  tone="lime"
-                  className="text-[22px] leading-none"
-                />
+                <KesAmount value={pillars[id]} tone="lime" className="text-[22px] leading-none" />
                 <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-vuna-dim">
                   {meta.label}
                 </p>
@@ -202,11 +183,27 @@ export function HarvestTab() {
             )
           })}
         </div>
-        <PillarDrawer
-          swapSlot={swapSlot}
-          onPick={(id) => promotePillar(id, swapSlot)}
-        />
+        <PillarDrawer swapSlot={swapSlot} onPick={(id) => promotePillar(id, swapSlot)} />
       </section>
+
+      {activityPillar ? (
+        <ActivitySheet
+          pillar={activityPillar}
+          onClose={() => setActivityPillar(null)}
+          onPick={(activity) => {
+            chooseActivity(activityPillar, activity)
+            setActivityPillar(null)
+            document.getElementById('protocol-entry')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          onOther={() => {
+            const first = lines[0]
+            if (first) updateLine(first.id, { pillar: activityPillar, description: '' })
+            setActiveTribe(activityPillar)
+            setActivityPillar(null)
+            document.getElementById('protocol-entry')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+        />
+      ) : null}
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { Gift, Heart } from 'lucide-react'
 import { KesAmount } from './KesAmount'
+import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
+import { TribeChip } from './TribeChip'
 
 function timeLabel(minutesAgo: number) {
   if (minutesAgo < 1) return 'now'
@@ -19,7 +21,11 @@ export function PulseTab() {
     giftNotice,
     liveFriends,
     leaders,
+    activeTribePillar,
+    openTribes,
   } = useVuna()
+
+  const tribe = TRIBES[activeTribePillar]
 
   return (
     <div className="space-y-5 pb-4">
@@ -29,6 +35,13 @@ export function PulseTab() {
         </p>
         <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PULSE</h1>
       </header>
+
+      <div className="flex items-center justify-between gap-3">
+        <TribeChip tribe={tribe} onClick={openTribes} />
+        <p className="min-w-0 flex-1 text-[12px] leading-snug text-vuna-muted">
+          {tribe.line} Tap the circle to sit with them.
+        </p>
+      </div>
 
       <div className="flex rounded-full bg-vuna-raised p-1">
         <button
@@ -58,7 +71,7 @@ export function PulseTab() {
       <div className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-3">
         <p className="flex items-start gap-2 text-[13px] leading-snug text-vuna-mint">
           <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-vuna-mint" />
-          Live: {liveFriends} of your friends are active in Fitness Tribe
+          Live: {liveFriends} of your friends are active in {tribe.name}
         </p>
       </div>
 

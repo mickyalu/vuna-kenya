@@ -10,6 +10,8 @@ export function ProfileTab() {
     inviteContacts,
     wrapEnabled,
     setWrapEnabled,
+    firstName,
+    setFirstName,
   } = useVuna()
 
   return (
@@ -20,6 +22,17 @@ export function ProfileTab() {
         </p>
         <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PROFILE</h1>
       </header>
+
+      <label className="block rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3">
+        <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+          CARDHOLDER FIRST NAME
+        </span>
+        <input
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          className="mt-1 w-full bg-transparent text-[18px] font-semibold tracking-[0.12em] text-white outline-none"
+        />
+      </label>
 
       <div className="grid grid-cols-2 gap-3">
         <article className="rounded-2xl border border-vuna-border bg-vuna-card px-3 py-6 text-center">

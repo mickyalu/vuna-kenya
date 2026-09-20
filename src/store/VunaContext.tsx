@@ -118,6 +118,15 @@ type VunaState = {
   updateTransfer: (patch: Partial<TransferState>) => void
   sendTransfer: () => void
   liveFriends: number
+  firstName: string
+  setFirstName: (name: string) => void
+  activeTribePillar: PillarId
+  setActiveTribe: (id: PillarId) => void
+  chooseActivity: (pillar: PillarId, activity: string) => void
+  tribeDrawerOpen: boolean
+  openTribes: () => void
+  closeTribes: () => void
+  lockPrompt: string | null
 }
 
 const VunaContext = createContext<VunaState | null>(null)
@@ -152,6 +161,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [whatsappConnected, setWhatsappConnected] = useState(false)
   const [wrapEnabled, setWrapEnabled] = useState(true)
   const [giftNotice, setGiftNotice] = useState<string | null>(null)
+  const [firstName, setFirstNameState] = useState(() => {
+    return localStorage.getItem('vuna-first-name') || 'Michael'
+  })
+  const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
+  const [tribeDrawerOpen, setTribeDrawerOpen] = useState(false)
+  const [lockPrompt, setLockPrompt] = useState<string | null>(null)
   const [transfer, setTransfer] = useState<TransferState>({
     open: false,
     phone: '',
@@ -167,6 +182,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     }, 900)
     return () => window.clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (!lockPrompt) return
+    const id = window.setTimeout(() => setLockPrompt(null), 4200)
+    return () => window.clearTimeout(id)
+  }, [lockPrompt])
 
   useEffect(() => {
     if (!giftNotice) return
@@ -293,6 +314,35 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setTransfer((t) => ({ ...t, ...patch, error: patch.error ?? null }))
   }, [])
 
+  const setFirstName = useCallback((name: string) => {
+    const next = name.trim() || 'Michael'
+    setFirstNameState(next)
+    localStorage.setItem('vuna-first-name', next)
+  }, [])
+
+  const setActiveTribe = useCallback((id: PillarId) => {
+    setActiveTribePillar(id)
+  }, [])
+
+  const chooseActivity = useCallback((pillar: PillarId, activity: string) => {
+    setLines((prev) => {
+      const [first, ...rest] = prev.length ? prev : [emptyLine()]
+      return [{ ...first, description: activity, pillar }, ...rest]
+    })
+    setActiveTribePillar(pillar)
+    setLockPrompt(`Now stake KES on ${activity}. The lock is how the promise gets a body.`)
+    setProtocolError(null)
+  }, [])
+
+  const openTribes = useCallback(() => {
+    setTab('pulse')
+    setTribeDrawerOpen(true)
+  }, [])
+
+  const closeTribes = useCallback(() => {
+    setTribeDrawerOpen(false)
+  }, [])
+
   const promotePillar = useCallback((id: PillarId, slot: number) => {
     setPinnedPillars((prev) => {
       if (prev[slot] === id) return prev
@@ -382,6 +432,15 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     updateTransfer,
     sendTransfer,
     liveFriends: 3,
+    firstName,
+    setFirstName,
+    activeTribePillar,
+    setActiveTribe,
+    chooseActivity,
+    tribeDrawerOpen,
+    openTribes,
+    closeTribes,
+    lockPrompt,
   }
 
   return <VunaContext.Provider value={value}>{children}</VunaContext.Provider>

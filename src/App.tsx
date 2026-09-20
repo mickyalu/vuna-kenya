@@ -3,7 +3,7 @@ import { HarvestTab } from './components/HarvestTab'
 import { LockTab } from './components/LockTab'
 import { ProfileTab } from './components/ProfileTab'
 import { PulseTab } from './components/PulseTab'
-import { TransferSheet } from './components/TransferSheet'
+import { TribeDrawer } from './components/TribeDrawer'
 import { VunaProvider, useVuna } from './store/VunaContext'
 
 function Shell() {
@@ -20,6 +20,7 @@ function Shell() {
         </main>
         <BottomNav />
         <TransferSheet />
+        <TribeDrawer />
       </div>
     </div>
   )
