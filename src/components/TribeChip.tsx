@@ -1,5 +1,5 @@
 import { FACE_PHOTOS } from '../lib/avatars'
-import { TRIBES, type Tribe } from '../lib/tribes'
+import { type Tribe } from '../lib/tribes'
 import { PersonAvatar } from './PersonAvatar'
 
 export function TribeChip({

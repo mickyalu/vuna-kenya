@@ -15,14 +15,10 @@ export function HarvestTab() {
     pillars,
     promotePillar,
     chooseActivity,
-    setActiveTribe,
     activeTribePillar,
     openTribes,
     avatarUrl,
     firstName,
-    updateLine,
-    lines,
-    setLiveOpen,
   } = useVuna()
   const [swapSlot, setSwapSlot] = useState(0)
   const [activityPillar, setActivityPillar] = useState<PillarId | null>(null)
@@ -87,13 +83,6 @@ export function HarvestTab() {
           onClose={() => setActivityPillar(null)}
           onPick={(activity) => {
             chooseActivity(activityPillar, activity)
-            setActivityPillar(null)
-          }}
-          onOther={() => {
-            const first = lines[0]
-            if (first) updateLine(first.id, { pillar: activityPillar, description: '' })
-            setActiveTribe(activityPillar)
-            setLiveOpen(true)
             setActivityPillar(null)
           }}
         />

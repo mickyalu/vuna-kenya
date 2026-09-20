@@ -28,7 +28,9 @@ React 19, TypeScript, Vite, Tailwind CSS, Lucide icons.
 
 ## How to try it
 
-1. On Harvest, describe a habit, pick a pillar, enter a KES amount, and tap send.
-2. Open Lock to see deposits, yield, and remaining lock time. Use Vuna Transfer with a Safaricom number (`07XXXXXXXX` or `+2547XXXXXXXX`).
-3. On Pulse, salute a win or send a KES 50 Vuna Gift (needs at least KES 50.00 in protocol).
-4. On Profile, connect WhatsApp to invite contacts, and toggle the weekly wrap.
+1. On Harvest, tap a pillar (Health, Fitness, …) and pick an activity — or type one at the bottom of the sheet.
+2. The lock sheet opens immediately: amount, optional caption, Post to Pulse toggle, then Send STK.
+3. After the demo PIN, a congratulations notice lands at the top. If Pulse was on, the lock is already on the feed.
+4. Open Lock to see deposits and remaining time. Use Vuna Transfer with a Safaricom number (`07XXXXXXXX` or `+2547XXXXXXXX`).
+5. On Pulse, salute a win or send a KES 50 Vuna Gift (needs at least KES 50.00 in protocol).
+6. On Profile, set your M-Pesa number, connect WhatsApp, and toggle the weekly wrap.

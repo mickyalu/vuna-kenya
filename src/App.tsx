@@ -1,3 +1,5 @@
+import { CongratsToast } from './components/CongratsToast'
+import { LockComposer } from './components/LockComposer'
 import { LogSheet } from './components/LogSheet'
 import { StkSheet } from './components/StkSheet'
 import { TransferSheet } from './components/TransferSheet'
@@ -26,6 +28,8 @@ function Shell() {
         <TransferSheet />
         <StkSheet />
         <LogSheet />
+        <LockComposer />
+        <CongratsToast />
         <TribeDrawer />
       </div>
     </div>

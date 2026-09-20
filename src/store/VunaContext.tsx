@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { avatarUrlById, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
 import { parseKesInput } from '../lib/money'
+import { describeNotify } from '../lib/notify'
 import { readStore, writeStore } from '../lib/storage'
 import {
   DEFAULT_PINNED,
@@ -18,7 +19,9 @@ import {
   type PillarId,
 } from '../lib/pillars'
 import type {
+  Composer,
   FeedPost,
+  InAppNotice,
   LeaderRow,
   LogDraft,
   ProtocolLine,
@@ -39,6 +42,24 @@ function uid() {
 
 function emptyLine(): ProtocolLine {
   return { id: uid(), description: '', amount: '', pillar: '', status: 'draft' }
+}
+
+function emptyComposer(): Composer {
+  return {
+    open: false,
+    pillar: '',
+    activity: '',
+    amount: '',
+    caption: '',
+    postToPulse: true,
+    visibility: 'public',
+    sending: false,
+    error: null,
+  }
+}
+
+function isSafaricom(phone: string) {
+  return /^(\+?254|0)7\d{8}$/.test(phone.replace(/\s/g, ''))
 }
 
 const INITIAL_FEED: FeedPost[] = [
@@ -145,6 +166,12 @@ type VunaState = {
   activeTribePillar: PillarId
   setActiveTribe: (id: PillarId) => void
   chooseActivity: (pillar: PillarId, activity: string) => void
+  composer: Composer
+  updateComposer: (patch: Partial<Composer>) => void
+  closeComposer: () => void
+  sendComposerStk: () => void
+  notice: InAppNotice | null
+  dismissNotice: () => void
   tribeDrawerOpen: boolean
   openTribes: () => void
   closeTribes: () => void
@@ -224,12 +251,20 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     error: null,
     success: null,
   })
+  const [composer, setComposer] = useState<Composer>(emptyComposer)
+  const [notice, setNotice] = useState<InAppNotice | null>(null)
 
   useEffect(() => {
     if (!lockPrompt) return
     const id = window.setTimeout(() => setLockPrompt(null), 4200)
     return () => window.clearTimeout(id)
   }, [lockPrompt])
+
+  useEffect(() => {
+    if (!notice) return
+    const id = window.setTimeout(() => setNotice(null), 5200)
+    return () => window.clearTimeout(id)
+  }, [notice])
 
   useEffect(() => {
     if (!giftNotice) return
@@ -282,7 +317,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         setProtocolError('Enter a KES amount, then Safaricom can prompt you.')
         return
       }
-      if (!/^(\+?254|0)7\d{8}$/.test(mpesaPhone.replace(/\s/g, ''))) {
+      if (!isSafaricom(mpesaPhone)) {
         setProtocolError('Add a Safaricom number on Profile, then send STK.')
         return
       }
@@ -307,14 +342,25 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       const kes = parseKesInput(line.amount)
       setDeposits((v) => v + kes)
       if (line.pillar) {
-        setPillars((prev) => ({ ...prev, [line.pillar]: prev[line.pillar] + kes }))
+        const pillar = line.pillar
+        setPillars((prev) => ({ ...prev, [pillar]: prev[pillar] + kes }))
       }
       setLines((prev) =>
         prev.map((item) => (item.id === line.id ? { ...item, status: 'locked' as const } : item)),
       )
       setStk({ open: false, lineId: null, status: 'idle', error: null })
       setLockPrompt('Locked. When you finish, tap I did it — or say nothing. Logging is optional.')
-      setLiveOpen(true)
+      setNotice({
+        id: uid(),
+        title: 'Congratulations',
+        body: describeNotify({
+          kind: 'stk_success',
+          activity: line.description,
+          kes,
+          posted: false,
+        }),
+      })
+      setLiveOpen(false)
     }, 1100)
   }, [lines, stk.lineId])
 
@@ -456,23 +502,95 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const chooseActivity = useCallback((pillar: PillarId, activity: string) => {
-    setLines((prev) => {
-      const draft = prev.find((l) => l.status === 'draft')
-      if (draft && !draft.description) {
-        return prev.map((l) =>
-          l.id === draft.id ? { ...l, description: activity, pillar, status: 'draft' } : l,
-        )
-      }
-      return [
-        ...prev.filter((l) => l.description || l.status === 'locked'),
-        { id: uid(), description: activity, amount: '', pillar, status: 'draft' },
-      ]
-    })
+    const name = activity.trim()
+    if (!name) return
     setActiveTribePillar(pillar)
-    setLockPrompt(`Enter KES and send STK. Log only after you actually do ${activity}.`)
     setProtocolError(null)
-    setLiveOpen(true)
+    setLiveOpen(false)
+    setComposer({
+      open: true,
+      pillar,
+      activity: name,
+      amount: '',
+      caption: '',
+      postToPulse: true,
+      visibility: 'public',
+      sending: false,
+      error: null,
+    })
   }, [])
+
+  const updateComposer = useCallback((patch: Partial<Composer>) => {
+    setComposer((prev) => (prev.sending ? prev : { ...prev, ...patch, error: patch.error ?? null }))
+  }, [])
+
+  const closeComposer = useCallback(() => {
+    setComposer((prev) => (prev.sending ? prev : emptyComposer()))
+  }, [])
+
+  const dismissNotice = useCallback(() => {
+    setNotice(null)
+  }, [])
+
+  const sendComposerStk = useCallback(() => {
+    if (composer.sending) return
+    const activity = composer.activity.trim()
+    if (!activity || !composer.pillar) {
+      setComposer((c) => ({ ...c, error: 'Pick an activity first.' }))
+      return
+    }
+    const kes = parseKesInput(composer.amount)
+    if (kes <= 0) {
+      setComposer((c) => ({
+        ...c,
+        error: 'Enter a KES amount, then Safaricom can prompt you.',
+      }))
+      return
+    }
+    if (!isSafaricom(mpesaPhone)) {
+      setComposer((c) => ({
+        ...c,
+        error: 'Add your Safaricom number so the STK can land.',
+      }))
+      return
+    }
+
+    const pillar = composer.pillar
+    const caption = composer.caption.trim()
+    const postToPulse = composer.postToPulse
+    const visibility = composer.visibility
+    setComposer((c) => ({ ...c, sending: true, error: null }))
+
+    window.setTimeout(() => {
+      setDeposits((v) => v + kes)
+      setPillars((prev) => ({ ...prev, [pillar]: prev[pillar] + kes }))
+      setTotalWins((v) => v + 1)
+      setStreak((v) => v + 1)
+      if (postToPulse) {
+        setFeed((prev) => [
+          {
+            id: uid(),
+            handle: `@${firstName.toUpperCase()}`,
+            tribe: `${titleCasePillar(pillar)} Tribe`,
+            avatar: avatarUrl,
+            text: caption || `${activity} — locked.`,
+            streak: streak + 1,
+            minutesAgo: 0,
+            salutes: 0,
+            saluted: false,
+            visibility,
+          },
+          ...prev,
+        ])
+      }
+      setComposer(emptyComposer())
+      setNotice({
+        id: uid(),
+        title: 'Congratulations',
+        body: describeNotify({ kind: 'stk_success', activity, kes, posted: postToPulse }),
+      })
+    }, 1100)
+  }, [composer, mpesaPhone, firstName, avatarUrl, streak])
 
   const openTribes = useCallback(() => {
     setTab('pulse')
@@ -588,6 +706,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     activeTribePillar,
     setActiveTribe,
     chooseActivity,
+    composer,
+    updateComposer,
+    closeComposer,
+    sendComposerStk,
+    notice,
+    dismissNotice,
     tribeDrawerOpen,
     openTribes,
     closeTribes,

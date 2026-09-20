@@ -51,6 +51,24 @@ export type LeaderRow = {
   streak: number
 }
 
+export type Composer = {
+  open: boolean
+  pillar: PillarId | ''
+  activity: string
+  amount: string
+  caption: string
+  postToPulse: boolean
+  visibility: Visibility
+  sending: boolean
+  error: string | null
+}
+
+export type InAppNotice = {
+  id: string
+  title: string
+  body: string
+}
+
 export type TransferState = {
   open: boolean
   phone: string

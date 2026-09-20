@@ -24,10 +24,16 @@ export type NotifyEvent =
   | { kind: 'streak_risk'; hoursLeft: number }
   | { kind: 'tribe_salute'; handle: string }
   | { kind: 'mpesa_receipt'; kes: number }
+  | { kind: 'stk_success'; activity: string; kes: number; posted: boolean }
 
 export function describeNotify(event: NotifyEvent): string {
   if (event.kind === 'friday_wrap') return 'Weekly auditor wrap is due Friday 18:00.'
   if (event.kind === 'streak_risk') return `Streak at risk in ${event.hoursLeft}h.`
   if (event.kind === 'tribe_salute') return `${event.handle} saluted your vuna.`
+  if (event.kind === 'stk_success') {
+    return event.posted
+      ? `Congratulations. ${event.activity} is locked at KES ${event.kes.toFixed(2)} and on Pulse.`
+      : `Congratulations. ${event.activity} is locked at KES ${event.kes.toFixed(2)}.`
+  }
   return `M-Pesa receipt for KES ${event.kes.toFixed(2)}.`
 }

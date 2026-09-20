@@ -53,7 +53,7 @@ export function LiveProtocols() {
             </span>
             <span className="block text-[11px] text-vuna-muted">
               {count === 0
-                ? 'Tap a pillar, STK lock, then log if you want'
+                ? 'Open a pillar to lock. This strip is only live locks.'
                 : `${locked.length} locked · ${drafts.length} unpaid`}
             </span>
           </span>
