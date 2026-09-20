@@ -182,7 +182,7 @@ export function PulseTab() {
             THIS MONTH · {monthLabel().toUpperCase()}
           </h2>
           <p className="mb-3 text-[12px] text-vuna-muted">
-            Ranked by vunas — how many times someone locked a habit this month. Not KES.
+            Ranked by how many vunas you locked this month.
           </p>
           <div className="space-y-2">
             {[
