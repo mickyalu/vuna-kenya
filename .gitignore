@@ -1,3 +1,7 @@
+# Local agent / design inputs
+agent-tools/
+assets/
+
 # Logs
 logs
 *.log
