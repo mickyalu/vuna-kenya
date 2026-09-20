@@ -1,5 +1,7 @@
 import { Calendar, CircleCheck } from 'lucide-react'
+import { AVATAR_CHOICES } from '../lib/avatars'
 import { useVuna } from '../store/VunaContext'
+import { PersonAvatar } from './PersonAvatar'
 
 export function ProfileTab() {
   const {
@@ -12,6 +14,9 @@ export function ProfileTab() {
     setWrapEnabled,
     firstName,
     setFirstName,
+    avatarId,
+    setAvatarId,
+    avatarUrl,
   } = useVuna()
 
   return (
@@ -27,12 +32,35 @@ export function ProfileTab() {
         <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
           CARDHOLDER FIRST NAME
         </span>
-        <input
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          className="mt-1 w-full bg-transparent text-[18px] font-semibold tracking-[0.12em] text-white outline-none"
-        />
+        <div className="mt-2 flex items-center gap-3">
+          <PersonAvatar src={avatarUrl} alt={firstName} size={44} />
+          <input
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="w-full bg-transparent text-[18px] font-semibold tracking-[0.12em] text-white outline-none"
+          />
+        </div>
       </label>
+
+      <section>
+        <h2 className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+          YOUR AVATAR
+        </h2>
+        <div className="grid grid-cols-4 gap-2">
+          {AVATAR_CHOICES.map((choice) => (
+            <button
+              key={choice.id}
+              type="button"
+              onClick={() => setAvatarId(choice.id)}
+              className={`rounded-2xl border p-2 ${
+                avatarId === choice.id ? 'border-vuna-lime bg-vuna-card' : 'border-vuna-border bg-vuna-card'
+              }`}
+            >
+              <PersonAvatar src={choice.url} alt={choice.label} size={48} className="mx-auto" />
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3">
         <article className="rounded-2xl border border-vuna-border bg-vuna-card px-3 py-6 text-center">

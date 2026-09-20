@@ -1,6 +1,8 @@
 import { Gift, Heart } from 'lucide-react'
+import { monthLabel } from '../lib/avatars'
 import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
+import { PersonAvatar } from './PersonAvatar'
 import { TribeChip } from './TribeChip'
 
 function timeLabel(minutesAgo: number) {
@@ -22,6 +24,9 @@ export function PulseTab() {
     leaders,
     activeTribePillar,
     openTribes,
+    avatarUrl,
+    firstName,
+    monthlyVunas,
   } = useVuna()
 
   const tribe = TRIBES[activeTribePillar]
@@ -36,7 +41,12 @@ export function PulseTab() {
       </header>
 
       <div className="flex items-center justify-between gap-3">
-        <TribeChip tribe={tribe} onClick={openTribes} />
+        <TribeChip
+          tribe={tribe}
+          onClick={openTribes}
+          youUrl={avatarUrl}
+          youName={firstName}
+        />
         <p className="min-w-0 flex-1 text-[12px] leading-snug text-vuna-muted">
           {tribe.line} Tap the circle to sit with them.
         </p>
@@ -97,9 +107,7 @@ export function PulseTab() {
                   className="rounded-2xl border border-vuna-border bg-vuna-card p-4"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-vuna-raised text-lg">
-                      {post.avatar}
-                    </div>
+                    <PersonAvatar src={post.avatar} alt={post.handle} size={44} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="flex min-w-0 items-center gap-1.5 text-[14px] font-bold text-white">
@@ -152,11 +160,23 @@ export function PulseTab() {
         </section>
       ) : (
         <section>
-          <h2 className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
-            FITNESS TRIBE STANDINGS
+          <h2 className="mb-1 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+            THIS MONTH · {monthLabel().toUpperCase()}
           </h2>
+          <p className="mb-3 text-[12px] text-vuna-muted">
+            Ranked by vunas — how many times someone locked a habit this month. Not KES.
+          </p>
           <div className="space-y-2">
-            {[...leaders]
+            {[
+              {
+                handle: `@${firstName.toUpperCase()}`,
+                tribe: 'You',
+                avatar: avatarUrl,
+                kes: 0,
+                streak: monthlyVunas,
+              },
+              ...leaders,
+            ]
               .sort((a, b) => b.streak - a.streak)
               .map((row, index) => (
               <article
@@ -166,9 +186,7 @@ export function PulseTab() {
                 <span className="w-6 text-center text-[13px] font-semibold text-vuna-muted">
                   {index + 1}
                 </span>
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-vuna-raised text-lg">
-                  {row.avatar}
-                </span>
+                <PersonAvatar src={row.avatar} alt={row.handle} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold text-white">{row.handle}</p>
                   <p className="text-[12px] text-vuna-muted">{row.tribe}</p>

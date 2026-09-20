@@ -1,9 +1,11 @@
+import { FACE_PHOTOS } from './avatars'
 import type { PillarId } from './pillars'
 
 export type TribeMember = {
   initials: string
   tone: string
   name: string
+  photo: string
 }
 
 export type Tribe = {
@@ -12,6 +14,10 @@ export type Tribe = {
   live: number
   line: string
   members: TribeMember[]
+}
+
+function mate(name: keyof typeof FACE_PHOTOS, initials: string, tone: string): TribeMember {
+  return { name, initials, tone, photo: FACE_PHOTOS[name] }
 }
 
 export const ACTIVITIES: Record<PillarId, string[]> = {
@@ -36,10 +42,10 @@ export const TRIBES: Record<PillarId, Tribe> = {
     live: 3,
     line: 'Karura before the city wakes.',
     members: [
-      { initials: 'MK', tone: '#6b4f3a', name: 'Mkuu' },
-      { initials: 'NZ', tone: '#2f3a44', name: 'Nzomo' },
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-      { initials: 'SA', tone: '#8a6a55', name: 'Sam' },
+      mate('Mkuu', 'MK', '#6b4f3a'),
+      mate('Nzomo', 'NZ', '#2f3a44'),
+      mate('Awino', 'AW', '#c4a574'),
+      mate('Sam', 'SA', '#8a6a55'),
     ],
   },
   HEALTH: {
@@ -48,9 +54,9 @@ export const TRIBES: Record<PillarId, Tribe> = {
     live: 2,
     line: 'Stillness before the matatu crush.',
     members: [
-      { initials: 'SA', tone: '#8a6a55', name: 'Sam' },
-      { initials: 'LV', tone: '#4a5560', name: 'Leila' },
-      { initials: 'JO', tone: '#3d4a3a', name: 'Joe' },
+      mate('Sam', 'SA', '#8a6a55'),
+      mate('Leila', 'LV', '#4a5560'),
+      mate('Joe', 'JO', '#3d4a3a'),
     ],
   },
   HABITS: {
@@ -59,9 +65,9 @@ export const TRIBES: Record<PillarId, Tribe> = {
     live: 4,
     line: 'Tiny promises, kept in KES.',
     members: [
-      { initials: 'MK', tone: '#6b4f3a', name: 'Mkuu' },
-      { initials: 'SA', tone: '#8a6a55', name: 'Sam' },
-      { initials: 'KE', tone: '#5c4a38', name: 'Ken' },
+      mate('Mkuu', 'MK', '#6b4f3a'),
+      mate('Sam', 'SA', '#8a6a55'),
+      mate('Ken', 'KE', '#5c4a38'),
     ],
   },
   LIFESTYLE: {
@@ -70,9 +76,9 @@ export const TRIBES: Record<PillarId, Tribe> = {
     live: 2,
     line: 'Home rhythm over hustle theatre.',
     members: [
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-      { initials: 'LV', tone: '#4a5560', name: 'Leila' },
-      { initials: 'NZ', tone: '#2f3a44', name: 'Nzomo' },
+      mate('Awino', 'AW', '#c4a574'),
+      mate('Leila', 'LV', '#4a5560'),
+      mate('Nzomo', 'NZ', '#2f3a44'),
     ],
   },
   RELATIONSHIP: {
@@ -80,10 +86,7 @@ export const TRIBES: Record<PillarId, Tribe> = {
     name: 'Keepers',
     live: 1,
     line: 'The people who still pick up.',
-    members: [
-      { initials: 'LV', tone: '#4a5560', name: 'Leila' },
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-    ],
+    members: [mate('Leila', 'LV', '#4a5560'), mate('Awino', 'AW', '#c4a574')],
   },
   FINANCES: {
     pillar: 'FINANCES',
@@ -91,9 +94,9 @@ export const TRIBES: Record<PillarId, Tribe> = {
     live: 3,
     line: 'Save it before it leaves the simu.',
     members: [
-      { initials: 'MK', tone: '#6b4f3a', name: 'Mkuu' },
-      { initials: 'KE', tone: '#5c4a38', name: 'Ken' },
-      { initials: 'JO', tone: '#3d4a3a', name: 'Joe' },
+      mate('Mkuu', 'MK', '#6b4f3a'),
+      mate('Ken', 'KE', '#5c4a38'),
+      mate('Joe', 'JO', '#3d4a3a'),
     ],
   },
   CAREER: {
@@ -101,59 +104,41 @@ export const TRIBES: Record<PillarId, Tribe> = {
     name: 'Deep Bench',
     live: 1,
     line: 'Craft when nobody is watching.',
-    members: [
-      { initials: 'NZ', tone: '#2f3a44', name: 'Nzomo' },
-      { initials: 'SA', tone: '#8a6a55', name: 'Sam' },
-    ],
+    members: [mate('Nzomo', 'NZ', '#2f3a44'), mate('Sam', 'SA', '#8a6a55')],
   },
   FAITH: {
     pillar: 'FAITH',
     name: 'First Light',
     live: 2,
     line: 'Before the noise, a word.',
-    members: [
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-      { initials: 'JO', tone: '#3d4a3a', name: 'Joe' },
-    ],
+    members: [mate('Awino', 'AW', '#c4a574'), mate('Joe', 'JO', '#3d4a3a')],
   },
   LEARNING: {
     pillar: 'LEARNING',
     name: 'Page Turners',
     live: 1,
     line: 'One page is still a harvest.',
-    members: [
-      { initials: 'SA', tone: '#8a6a55', name: 'Sam' },
-      { initials: 'LV', tone: '#4a5560', name: 'Leila' },
-    ],
+    members: [mate('Sam', 'SA', '#8a6a55'), mate('Leila', 'LV', '#4a5560')],
   },
   COMMUNITY: {
     pillar: 'COMMUNITY',
     name: 'Show Ups',
     live: 2,
     line: 'Presence is the gift.',
-    members: [
-      { initials: 'MK', tone: '#6b4f3a', name: 'Mkuu' },
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-    ],
+    members: [mate('Mkuu', 'MK', '#6b4f3a'), mate('Awino', 'AW', '#c4a574')],
   },
   REST: {
     pillar: 'REST',
     name: 'Sabbath Set',
     live: 1,
     line: 'Stop so the work can root.',
-    members: [
-      { initials: 'LV', tone: '#4a5560', name: 'Leila' },
-      { initials: 'JO', tone: '#3d4a3a', name: 'Joe' },
-    ],
+    members: [mate('Leila', 'LV', '#4a5560'), mate('Joe', 'JO', '#3d4a3a')],
   },
   NUTRITION: {
     pillar: 'NUTRITION',
     name: 'Cooks at Home',
     live: 2,
     line: 'The plate you can name.',
-    members: [
-      { initials: 'AW', tone: '#c4a574', name: 'Awino' },
-      { initials: 'KE', tone: '#5c4a38', name: 'Ken' },
-    ],
+    members: [mate('Awino', 'AW', '#c4a574'), mate('Ken', 'KE', '#5c4a38')],
   },
 }

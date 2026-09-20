@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { avatarUrlById, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
 import { parseKesInput } from '../lib/money'
 import { readStore, writeStore } from '../lib/storage'
 import {
@@ -42,7 +43,7 @@ const INITIAL_FEED: FeedPost[] = [
     id: 'p1',
     handle: '@MKUU_ABAN',
     tribe: 'Karura Runners',
-    avatar: '🏃',
+    avatar: FACE_PHOTOS.Mkuu,
     text: 'Just finished my 5AM Karura run. Consistency is the only hack.',
     streak: 2,
     minutesAgo: 10,
@@ -53,7 +54,7 @@ const INITIAL_FEED: FeedPost[] = [
     id: 'p2',
     handle: '@SAMANTHA_V',
     tribe: 'Mindful Morning',
-    avatar: '🧘',
+    avatar: FACE_PHOTOS.Sam,
     text: 'Cold shower + 10 minutes of stillness before the matatu crush.',
     streak: 15,
     minutesAgo: 60,
@@ -64,7 +65,7 @@ const INITIAL_FEED: FeedPost[] = [
     id: 'p3',
     handle: '@NZOMO_K',
     tribe: 'Westlands Lifters',
-    avatar: '💪',
+    avatar: FACE_PHOTOS.Nzomo,
     text: 'Locked KES 200 after completing my gym session. M-Pesa receipt incoming.',
     streak: 7,
     minutesAgo: 180,
@@ -74,10 +75,10 @@ const INITIAL_FEED: FeedPost[] = [
 ]
 
 const INITIAL_LEADERS: LeaderRow[] = [
-  { handle: '@SAMANTHA_V', tribe: 'Health', avatar: '🧘', kes: 12400, streak: 15 },
-  { handle: '@MKUU_ABAN', tribe: 'Fitness', avatar: '🏃', kes: 9800, streak: 2 },
-  { handle: '@NZOMO_K', tribe: 'Fitness', avatar: '💪', kes: 7200, streak: 7 },
-  { handle: '@AWINO', tribe: 'Lifestyle', avatar: '🌿', kes: 4100, streak: 4 },
+  { handle: '@SAMANTHA_V', tribe: 'Health', avatar: FACE_PHOTOS.Sam, kes: 12400, streak: 15 },
+  { handle: '@MKUU_ABAN', tribe: 'Fitness', avatar: FACE_PHOTOS.Mkuu, kes: 9800, streak: 2 },
+  { handle: '@NZOMO_K', tribe: 'Fitness', avatar: FACE_PHOTOS.Nzomo, kes: 7200, streak: 7 },
+  { handle: '@AWINO', tribe: 'Lifestyle', avatar: FACE_PHOTOS.Awino, kes: 4100, streak: 4 },
 ]
 
 type VunaState = {
@@ -131,6 +132,12 @@ type VunaState = {
   openTribes: () => void
   closeTribes: () => void
   lockPrompt: string | null
+  liveOpen: boolean
+  setLiveOpen: (open: boolean) => void
+  avatarId: string
+  avatarUrl: string
+  setAvatarId: (id: string) => void
+  monthlyVunas: number
 }
 
 const VunaContext = createContext<VunaState | null>(null)
@@ -173,6 +180,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
   const [tribeDrawerOpen, setTribeDrawerOpen] = useState(false)
   const [lockPrompt, setLockPrompt] = useState<string | null>(null)
+  const [liveOpen, setLiveOpen] = useState(false)
+  const [avatarId, setAvatarIdState] = useState(
+    () => readStore('vuna-avatar') || DEFAULT_AVATAR_ID,
+  )
+  const avatarUrl = avatarUrlById(avatarId)
   const [transfer, setTransfer] = useState<TransferState>({
     open: false,
     phone: '',
@@ -213,6 +225,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const cancelProtocol = useCallback(() => {
     setLines([emptyLine()])
     setProtocolError(null)
+    setLockPrompt(null)
+    setLiveOpen(false)
   }, [])
 
   const commitProtocol = useCallback(() => {
@@ -244,7 +258,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         id: uid(),
         handle: '@YOU',
         tribe: first.pillar ? `${titleCasePillar(first.pillar)} Tribe` : 'Vuna',
-        avatar: '🌾',
+        avatar: avatarUrl,
         text: first.description.trim() || `Locked ${added.toFixed(2)} KES into protocol.`,
         streak: streak + 1,
         minutesAgo: 0,
@@ -255,7 +269,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     ])
     setLines([emptyLine()])
     setProtocolError(null)
-  }, [lines, streak])
+    setLiveOpen(false)
+  }, [lines, streak, avatarUrl])
 
   const salute = useCallback((id: string) => {
     setFeed((prev) =>
@@ -312,6 +327,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setTransfer((t) => ({ ...t, ...patch, error: patch.error ?? null }))
   }, [])
 
+  const setAvatarId = useCallback((id: string) => {
+    setAvatarIdState(id)
+    writeStore('vuna-avatar', id)
+  }, [])
+
   const setFirstName = useCallback((name: string) => {
     const next = name.trim() || 'Michael'
     setFirstNameState(next)
@@ -333,8 +353,9 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       return [{ ...first, description: activity, pillar }, ...rest]
     })
     setActiveTribePillar(pillar)
-    setLockPrompt(`Now stake KES on ${activity}. The lock is how the promise gets a body.`)
+    setLockPrompt(`Stake KES on ${activity}. That is the lock.`)
     setProtocolError(null)
+    setLiveOpen(true)
   }, [])
 
   const openTribes = useCallback(() => {
@@ -444,6 +465,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     openTribes,
     closeTribes,
     lockPrompt,
+    liveOpen,
+    setLiveOpen,
+    avatarId,
+    avatarUrl,
+    setAvatarId,
+    monthlyVunas: totalWins,
   }
 
   return <VunaContext.Provider value={value}>{children}</VunaContext.Provider>

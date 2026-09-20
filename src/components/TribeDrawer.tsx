@@ -45,7 +45,10 @@ export function TribeDrawer() {
                   active ? 'border-vuna-lime bg-vuna-card' : 'border-vuna-border bg-vuna-card'
                 }`}
               >
-                <AvatarStack members={tribe.members} />
+                <AvatarStack
+                  faces={tribe.members.map((m) => ({ src: m.photo, alt: m.name }))}
+                  size={32}
+                />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-white">{tribe.name}</span>
                   <span className="block text-[12px] text-vuna-muted">{tribe.line}</span>
