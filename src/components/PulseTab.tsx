@@ -25,7 +25,7 @@ export function PulseTab() {
     activeTribePillar,
     openTribes,
     avatarUrl,
-    firstName,
+    cardName,
     monthlyVunas,
   } = useVuna()
 
@@ -45,7 +45,7 @@ export function PulseTab() {
           tribe={tribe}
           onClick={openTribes}
           youUrl={avatarUrl}
-          youName={firstName}
+          youName={cardName}
         />
         <p className="min-w-0 flex-1 text-[12px] leading-snug text-vuna-muted">
           {tribe.line} Tap the circle to sit with them.
@@ -172,7 +172,7 @@ export function PulseTab() {
           <div className="space-y-2">
             {[
               {
-                handle: `@${firstName.toUpperCase()}`,
+                handle: `@${cardName}`,
                 tribe: 'You',
                 avatar: avatarUrl,
                 kes: 0,

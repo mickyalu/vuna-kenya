@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { avatarUrlById, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
+import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
 import { parseKesInput } from '../lib/money'
 import { describeNotify } from '../lib/notify'
 import { readStore, writeStore } from '../lib/storage'
@@ -51,7 +51,7 @@ function emptyComposer(): Composer {
     activity: '',
     amount: '',
     caption: '',
-    postToPulse: true,
+    postToPulse: false,
     visibility: 'public',
     sending: false,
     error: null,
@@ -163,6 +163,11 @@ type VunaState = {
   liveFriends: number
   firstName: string
   setFirstName: (name: string) => void
+  lastInitial: string
+  setLastInitial: (initial: string) => void
+  cardName: string
+  balanceHidden: boolean
+  toggleBalanceHidden: () => void
   activeTribePillar: PillarId
   setActiveTribe: (id: PillarId) => void
   chooseActivity: (pillar: PillarId, activity: string) => void
@@ -221,13 +226,21 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [firstName, setFirstNameState] = useState(
     () => readStore('vuna-first-name') || 'Michael',
   )
+  const [lastInitial, setLastInitialState] = useState(
+    () => (readStore('vuna-last-initial') || 'A').slice(0, 1).toUpperCase(),
+  )
+  const cardName = cardholderName(firstName, lastInitial)
+  const [balanceHidden, setBalanceHidden] = useState(
+    () => readStore('vuna-hide-balance') === 'on',
+  )
   const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
   const [tribeDrawerOpen, setTribeDrawerOpen] = useState(false)
   const [lockPrompt, setLockPrompt] = useState<string | null>(null)
   const [liveOpen, setLiveOpen] = useState(false)
-  const [avatarId, setAvatarIdState] = useState(
-    () => readStore('vuna-avatar') || DEFAULT_AVATAR_ID,
-  )
+  const [avatarId, setAvatarIdState] = useState(() => {
+    const stored = readStore('vuna-avatar')
+    return AVATAR_CHOICES.some((a) => a.id === stored) ? stored! : DEFAULT_AVATAR_ID
+  })
   const avatarUrl = avatarUrlById(avatarId)
   const [mpesaPhone, setMpesaPhoneState] = useState(
     () => readStore('vuna-mpesa') || '',
@@ -399,7 +412,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setFeed((prev) => [
       {
         id: uid(),
-        handle: `@${firstName.toUpperCase()}`,
+        handle: `@${cardName}`,
         tribe: line.pillar ? `${titleCasePillar(line.pillar)} Tribe` : 'Vuna',
         avatar: avatarUrl,
         text: note || `${line.description} — done.`,
@@ -419,7 +432,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setLockPrompt(null)
     setTab('pulse')
     setPulseTab('feed')
-  }, [lines, logDraft, firstName, avatarUrl, streak])
+  }, [lines, logDraft, cardName, avatarUrl, streak])
 
   const setMpesaPhone = useCallback((phone: string) => {
     setMpesaPhoneState(phone)
@@ -492,6 +505,20 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     writeStore('vuna-first-name', next)
   }, [])
 
+  const setLastInitial = useCallback((initial: string) => {
+    const next = initial.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase()
+    setLastInitialState(next)
+    writeStore('vuna-last-initial', next)
+  }, [])
+
+  const toggleBalanceHidden = useCallback(() => {
+    setBalanceHidden((v) => {
+      const next = !v
+      writeStore('vuna-hide-balance', next ? 'on' : 'off')
+      return next
+    })
+  }, [])
+
   const setWrapEnabled = useCallback((v: boolean) => {
     setWrapEnabledState(v)
     writeStore('vuna-wrap', v ? 'on' : 'off')
@@ -514,7 +541,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       activity: name,
       amount: '',
       caption: '',
-      postToPulse: true,
+      postToPulse: false,
       visibility: 'public',
       sending: false,
       error: null,
@@ -572,7 +599,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         setFeed((prev) => [
           {
             id: uid(),
-            handle: `@${firstName.toUpperCase()}`,
+            handle: `@${cardName}`,
             tribe: `${titleCasePillar(pillar)} Tribe`,
             avatar: avatarUrl,
             text: caption || `${activity} — locked.`,
@@ -592,7 +619,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         body: describeNotify({ kind: 'stk_success', activity, kes, posted: postToPulse }),
       })
     }, 1100)
-  }, [composer, mpesaPhone, firstName, avatarUrl, streak])
+  }, [composer, mpesaPhone, cardName, avatarUrl, streak])
 
   const openTribes = useCallback(() => {
     setTab('pulse')
@@ -705,6 +732,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     liveFriends: 3,
     firstName,
     setFirstName,
+    lastInitial,
+    setLastInitial,
+    cardName,
+    balanceHidden,
+    toggleBalanceHidden,
     activeTribePillar,
     setActiveTribe,
     chooseActivity,

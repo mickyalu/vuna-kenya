@@ -5,62 +5,37 @@ export type AvatarChoice = {
 }
 
 export const AVATAR_CHOICES: AvatarChoice[] = [
-  {
-    id: 'mike',
-    label: 'Mike',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Mike&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'awa',
-    label: 'Awa',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Awa&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'kito',
-    label: 'Kito',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Kito&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'zuri',
-    label: 'Zuri',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Zuri&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'nuru',
-    label: 'Nuru',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Nuru&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'leo',
-    label: 'Leo',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Leo&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'amina',
-    label: 'Amina',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Amina&backgroundColor=1a1a1a',
-  },
-  {
-    id: 'otieno',
-    label: 'Otieno',
-    url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Otieno&backgroundColor=1a1a1a',
-  },
+  { id: 'otieno', label: 'Otieno', url: '/faces/otieno.jpg' },
+  { id: 'awa', label: 'Awa', url: '/faces/awa.jpg' },
+  { id: 'mkuu', label: 'Mkuu', url: '/faces/mkuu.jpg' },
+  { id: 'zuri', label: 'Zuri', url: '/faces/zuri.jpg' },
+  { id: 'kito', label: 'Kito', url: '/faces/kito.jpg' },
+  { id: 'leila', label: 'Leila', url: '/faces/leila.jpg' },
+  { id: 'nuru', label: 'Nuru', url: '/faces/nuru.jpg' },
+  { id: 'amina', label: 'Amina', url: '/faces/amina.jpg' },
 ]
 
-export const DEFAULT_AVATAR_ID = 'mike'
+export const DEFAULT_AVATAR_ID = 'otieno'
 
 export function avatarUrlById(id: string): string {
   return AVATAR_CHOICES.find((a) => a.id === id)?.url ?? AVATAR_CHOICES[0].url
 }
 
+export function cardholderName(firstName: string, lastInitial: string) {
+  const raw = firstName.trim() || 'Michael'
+  const first = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+  const initial = (lastInitial.trim().charAt(0) || 'A').toUpperCase()
+  return `${first}.${initial}`
+}
+
 export const FACE_PHOTOS: Record<string, string> = {
-  Mkuu: 'https://randomuser.me/api/portraits/men/32.jpg',
-  Nzomo: 'https://randomuser.me/api/portraits/men/75.jpg',
-  Awino: 'https://randomuser.me/api/portraits/women/65.jpg',
-  Sam: 'https://randomuser.me/api/portraits/women/44.jpg',
-  Leila: 'https://randomuser.me/api/portraits/women/68.jpg',
-  Joe: 'https://randomuser.me/api/portraits/men/22.jpg',
-  Ken: 'https://randomuser.me/api/portraits/men/45.jpg',
+  Mkuu: '/faces/mkuu.jpg',
+  Nzomo: '/faces/otieno.jpg',
+  Awino: '/faces/awa.jpg',
+  Sam: '/faces/zuri.jpg',
+  Leila: '/faces/leila.jpg',
+  Joe: '/faces/joe.jpg',
+  Ken: '/faces/ken.jpg',
 }
 
 export function monthLabel(now = new Date()) {

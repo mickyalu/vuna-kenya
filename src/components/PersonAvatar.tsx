@@ -32,7 +32,7 @@ export function PersonAvatar({
       width={size}
       height={size}
       onError={() => setFailed(true)}
-      className={`rounded-full object-cover ${className}`}
+      className={`rounded-full object-cover object-top ${className}`}
       style={{ width: size, height: size }}
     />
   )

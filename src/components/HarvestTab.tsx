@@ -18,7 +18,7 @@ export function HarvestTab() {
     activeTribePillar,
     openTribes,
     avatarUrl,
-    firstName,
+    cardName,
   } = useVuna()
   const [swapSlot, setSwapSlot] = useState(0)
   const [activityPillar, setActivityPillar] = useState<PillarId | null>(null)
@@ -38,7 +38,7 @@ export function HarvestTab() {
             tribe={tribe}
             onClick={openTribes}
             youUrl={avatarUrl}
-            youName={firstName}
+            youName={cardName}
             compact
           />
         </div>

@@ -1,10 +1,20 @@
+import { Eye, EyeOff } from 'lucide-react'
 import { KesAmount } from './KesAmount'
 import { useYieldTick } from '../lib/useYieldTick'
 import { useVuna } from '../store/VunaContext'
 import { PersonAvatar } from './PersonAvatar'
 
 export function ProtocolCard() {
-  const { deposits, tickingYield, goalName, progressPct, firstName, avatarUrl } = useVuna()
+  const {
+    deposits,
+    tickingYield,
+    goalName,
+    progressPct,
+    cardName,
+    avatarUrl,
+    balanceHidden,
+    toggleBalanceHidden,
+  } = useVuna()
   const liveTick = useYieldTick(tickingYield)
 
   return (
@@ -31,9 +41,23 @@ export function ProtocolCard() {
         <ChipMark />
       </div>
 
-      <p className="relative mt-2 leading-none">
-        <KesAmount value={deposits} className="text-[36px] leading-none" />
-      </p>
+      <div className="relative mt-2 flex items-center justify-between gap-3">
+        <p
+          className={`min-w-0 leading-none ${balanceHidden ? 'select-none blur-[9px]' : ''}`}
+          aria-hidden={balanceHidden}
+        >
+          <KesAmount value={deposits} className="text-[36px] leading-none" />
+        </p>
+        <button
+          type="button"
+          onClick={toggleBalanceHidden}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/30 text-vuna-lime"
+          aria-label={balanceHidden ? 'Show balance' : 'Hide balance'}
+          aria-pressed={balanceHidden}
+        >
+          {balanceHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
 
       <p className="relative mt-2 text-[11px] tracking-[0.12em] text-[#9aaa88]">
         FOR:{' '}
@@ -49,7 +73,11 @@ export function ProtocolCard() {
             style={{ width: `${Math.max(progressPct, 8)}%` }}
           />
         </div>
-        <p className="shrink-0 text-[11px] font-medium text-vuna-mint">
+        <p
+          className={`shrink-0 text-[11px] font-medium text-vuna-mint ${
+            balanceHidden ? 'select-none blur-[6px]' : ''
+          }`}
+        >
           +
           <KesAmount
             value={liveTick}
@@ -63,12 +91,10 @@ export function ProtocolCard() {
 
       <div className="relative mt-3 flex items-center justify-between border-t border-white/10 pt-2.5">
         <div className="flex items-center gap-2">
-          <PersonAvatar src={avatarUrl} alt={firstName} size={28} />
+          <PersonAvatar src={avatarUrl} alt={cardName} size={28} />
           <div>
             <p className="text-[9px] tracking-[0.18em] text-[#8a9a70]">CARDHOLDER</p>
-            <p className="text-[13px] font-semibold tracking-[0.16em] text-white">
-              {firstName.toUpperCase()}
-            </p>
+            <p className="text-[13px] font-semibold tracking-[0.08em] text-white">{cardName}</p>
           </div>
         </div>
         <p className="text-[10px] font-semibold tracking-[0.16em] text-vuna-lime">KES RAIL</p>

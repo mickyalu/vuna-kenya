@@ -14,6 +14,9 @@ export function ProfileTab() {
     setWrapEnabled,
     firstName,
     setFirstName,
+    lastInitial,
+    setLastInitial,
+    cardName,
     avatarId,
     setAvatarId,
     avatarUrl,
@@ -32,15 +35,30 @@ export function ProfileTab() {
 
       <label className="block rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3">
         <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
-          CARDHOLDER FIRST NAME
+          CARDHOLDER
         </span>
         <div className="mt-2 flex items-center gap-3">
-          <PersonAvatar src={avatarUrl} alt={firstName} size={44} />
-          <input
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="w-full bg-transparent text-[18px] font-semibold tracking-[0.12em] text-white outline-none"
-          />
+          <PersonAvatar src={avatarUrl} alt={cardName} size={44} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-end">
+              <input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                aria-label="First name"
+                className="min-w-[3ch] bg-transparent px-0 text-[18px] font-semibold tracking-tight text-white outline-none"
+                style={{ fieldSizing: 'content', width: 'auto' }}
+              />
+              <span className="pb-px text-[18px] font-semibold text-white">.</span>
+              <input
+                value={lastInitial}
+                onChange={(e) => setLastInitial(e.target.value)}
+                maxLength={1}
+                aria-label="Last initial"
+                className="w-[1em] bg-transparent px-0 text-left text-[18px] font-semibold uppercase tracking-tight text-white outline-none"
+              />
+            </div>
+            <p className="mt-0.5 text-[12px] text-vuna-muted">On the card as {cardName}</p>
+          </div>
         </div>
       </label>
 
