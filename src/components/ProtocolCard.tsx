@@ -41,9 +41,9 @@ export function ProtocolCard() {
         <ChipMark />
       </div>
 
-      <div className="relative mt-2 flex items-center justify-between gap-3">
+      <div className="relative mt-2 flex items-center gap-2">
         <p
-          className={`min-w-0 leading-none ${balanceHidden ? 'select-none blur-[9px]' : ''}`}
+          className={`leading-none ${balanceHidden ? 'select-none blur-[9px]' : ''}`}
           aria-hidden={balanceHidden}
         >
           <KesAmount value={deposits} className="text-[36px] leading-none" />
@@ -51,7 +51,7 @@ export function ProtocolCard() {
         <button
           type="button"
           onClick={toggleBalanceHidden}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/30 text-vuna-lime"
+          className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-vuna-lime"
           aria-label={balanceHidden ? 'Show balance' : 'Hide balance'}
           aria-pressed={balanceHidden}
         >
