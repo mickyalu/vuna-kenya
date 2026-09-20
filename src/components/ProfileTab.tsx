@@ -17,6 +17,8 @@ export function ProfileTab() {
     avatarId,
     setAvatarId,
     avatarUrl,
+    mpesaPhone,
+    setMpesaPhone,
   } = useVuna()
 
   return (
@@ -40,6 +42,19 @@ export function ProfileTab() {
             className="w-full bg-transparent text-[18px] font-semibold tracking-[0.12em] text-white outline-none"
           />
         </div>
+      </label>
+
+      <label className="block rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3">
+        <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+          M-PESA NUMBER FOR STK
+        </span>
+        <input
+          value={mpesaPhone}
+          onChange={(e) => setMpesaPhone(e.target.value)}
+          placeholder="07XX XXX XXX"
+          inputMode="tel"
+          className="mt-1 w-full bg-transparent text-[16px] text-white outline-none placeholder:text-vuna-dim"
+        />
       </label>
 
       <section>

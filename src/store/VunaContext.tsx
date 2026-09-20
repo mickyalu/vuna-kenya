@@ -20,9 +20,12 @@ import {
 import type {
   FeedPost,
   LeaderRow,
+  LogDraft,
   ProtocolLine,
+  StkState,
   TabId,
   TransferState,
+  Visibility,
 } from '../types'
 
 const GOAL_TARGET_KES = 43750
@@ -35,7 +38,7 @@ function uid() {
 }
 
 function emptyLine(): ProtocolLine {
-  return { id: uid(), description: '', amount: '', pillar: '' }
+  return { id: uid(), description: '', amount: '', pillar: '', status: 'draft' }
 }
 
 const INITIAL_FEED: FeedPost[] = [
@@ -49,6 +52,7 @@ const INITIAL_FEED: FeedPost[] = [
     minutesAgo: 10,
     salutes: 12,
     saluted: false,
+    visibility: 'public' as const,
   },
   {
     id: 'p2',
@@ -60,6 +64,7 @@ const INITIAL_FEED: FeedPost[] = [
     minutesAgo: 60,
     salutes: 8,
     saluted: false,
+    visibility: 'public' as const,
   },
   {
     id: 'p3',
@@ -71,6 +76,7 @@ const INITIAL_FEED: FeedPost[] = [
     minutesAgo: 180,
     salutes: 5,
     saluted: false,
+    visibility: 'public' as const,
   },
 ]
 
@@ -101,7 +107,18 @@ type VunaState = {
   updateLine: (id: string, patch: Partial<ProtocolLine>) => void
   addLine: () => void
   cancelProtocol: () => void
-  commitProtocol: () => void
+  stk: StkState
+  requestStk: (lineId: string) => void
+  confirmStk: () => void
+  closeStk: () => void
+  logDraft: LogDraft
+  openLog: (lineId: string) => void
+  closeLog: () => void
+  setLogMessage: (message: string) => void
+  setLogVisibility: (visibility: Visibility) => void
+  publishLog: () => void
+  mpesaPhone: string
+  setMpesaPhone: (phone: string) => void
   commitmentTotal: number
   feed: FeedPost[]
   pulseTab: 'feed' | 'leaderboard'
@@ -185,6 +202,21 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     () => readStore('vuna-avatar') || DEFAULT_AVATAR_ID,
   )
   const avatarUrl = avatarUrlById(avatarId)
+  const [mpesaPhone, setMpesaPhoneState] = useState(
+    () => readStore('vuna-mpesa') || '',
+  )
+  const [stk, setStk] = useState<StkState>({
+    open: false,
+    lineId: null,
+    status: 'idle',
+    error: null,
+  })
+  const [logDraft, setLogDraft] = useState<LogDraft>({
+    open: false,
+    lineId: null,
+    message: '',
+    visibility: 'public',
+  })
   const [transfer, setTransfer] = useState<TransferState>({
     open: false,
     phone: '',
@@ -206,7 +238,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [giftNotice])
 
   const commitmentTotal = useMemo(
-    () => lines.reduce((sum, line) => sum + parseKesInput(line.amount), 0),
+    () =>
+      lines
+        .filter((line) => line.status === 'draft')
+        .reduce((sum, line) => sum + parseKesInput(line.amount), 0),
     [lines],
   )
 
@@ -223,54 +258,127 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const cancelProtocol = useCallback(() => {
-    setLines([emptyLine()])
+    setLines((prev) => {
+      const locked = prev.filter((line) => line.status === 'locked')
+      return locked.length ? locked : [emptyLine()]
+    })
     setProtocolError(null)
     setLockPrompt(null)
-    setLiveOpen(false)
+    setStk({ open: false, lineId: null, status: 'idle', error: null })
   }, [])
 
-  const commitProtocol = useCallback(() => {
-    const ready = lines.filter((line) => parseKesInput(line.amount) > 0)
-    if (ready.length === 0) {
-      setProtocolError('Enter a KES amount to lock against a habit.')
-      return
-    }
-    if (ready.some((line) => !line.pillar)) {
-      setProtocolError('Select a pillar for each funded habit.')
-      return
-    }
-
-    const added = ready.reduce((sum, line) => sum + parseKesInput(line.amount), 0)
-    setDeposits((v) => v + added)
-    setPillars((prev) => {
-      const next = { ...prev }
-      for (const line of ready) {
-        if (line.pillar) next[line.pillar] += parseKesInput(line.amount)
+  const requestStk = useCallback(
+    (lineId: string) => {
+      const line = lines.find((l) => l.id === lineId)
+      if (!line || line.status !== 'draft') {
+        setProtocolError('Pick a habit first.')
+        return
       }
-      return next
-    })
-    setTotalWins((v) => v + ready.length)
-    setStreak((v) => v + 1)
+      if (!line.pillar) {
+        setProtocolError('Select a pillar before STK.')
+        return
+      }
+      if (parseKesInput(line.amount) <= 0) {
+        setProtocolError('Enter a KES amount, then Safaricom can prompt you.')
+        return
+      }
+      if (!/^(\+?254|0)7\d{8}$/.test(mpesaPhone.replace(/\s/g, ''))) {
+        setProtocolError('Add a Safaricom number on Profile, then send STK.')
+        return
+      }
+      setProtocolError(null)
+      setStk({ open: true, lineId, status: 'idle', error: null })
+    },
+    [lines, mpesaPhone],
+  )
 
-    const first = ready[0]
+  const closeStk = useCallback(() => {
+    setStk({ open: false, lineId: null, status: 'idle', error: null })
+  }, [])
+
+  const confirmStk = useCallback(() => {
+    const line = lines.find((l) => l.id === stk.lineId)
+    if (!line) {
+      setStk({ open: false, lineId: null, status: 'idle', error: null })
+      return
+    }
+    setStk((s) => ({ ...s, status: 'pushing', error: null }))
+    window.setTimeout(() => {
+      const kes = parseKesInput(line.amount)
+      setDeposits((v) => v + kes)
+      if (line.pillar) {
+        setPillars((prev) => ({ ...prev, [line.pillar]: prev[line.pillar] + kes }))
+      }
+      setLines((prev) =>
+        prev.map((item) => (item.id === line.id ? { ...item, status: 'locked' as const } : item)),
+      )
+      setStk({ open: false, lineId: null, status: 'idle', error: null })
+      setLockPrompt('Locked. When you finish, tap I did it — or say nothing. Logging is optional.')
+      setLiveOpen(true)
+    }, 1100)
+  }, [lines, stk.lineId])
+
+  const openLog = useCallback((lineId: string) => {
+    const line = lines.find((l) => l.id === lineId)
+    if (!line || line.status !== 'locked') {
+      setProtocolError('Pay the STK first. A vuna is a paid lock you then claim.')
+      return
+    }
+    setLogDraft({
+      open: true,
+      lineId,
+      message: '',
+      visibility: 'public',
+    })
+  }, [lines])
+
+  const closeLog = useCallback(() => {
+    setLogDraft({ open: false, lineId: null, message: '', visibility: 'public' })
+  }, [])
+
+  const setLogMessage = useCallback((message: string) => {
+    setLogDraft((d) => ({ ...d, message }))
+  }, [])
+
+  const setLogVisibility = useCallback((visibility: Visibility) => {
+    setLogDraft((d) => ({ ...d, visibility }))
+  }, [])
+
+  const publishLog = useCallback(() => {
+    const line = lines.find((l) => l.id === logDraft.lineId)
+    if (!line || line.status !== 'locked') return
+    const note = logDraft.message.trim()
+    setTotalWins((v) => v + 1)
+    setStreak((v) => v + 1)
     setFeed((prev) => [
       {
         id: uid(),
-        handle: '@YOU',
-        tribe: first.pillar ? `${titleCasePillar(first.pillar)} Tribe` : 'Vuna',
+        handle: `@${firstName.toUpperCase()}`,
+        tribe: line.pillar ? `${titleCasePillar(line.pillar)} Tribe` : 'Vuna',
         avatar: avatarUrl,
-        text: first.description.trim() || `Locked ${added.toFixed(2)} KES into protocol.`,
+        text: note || `${line.description} — done.`,
         streak: streak + 1,
         minutesAgo: 0,
         salutes: 0,
         saluted: false,
+        visibility: logDraft.visibility,
       },
       ...prev,
     ])
-    setLines([emptyLine()])
-    setProtocolError(null)
-    setLiveOpen(false)
-  }, [lines, streak, avatarUrl])
+    setLines((prev) => {
+      const next = prev.filter((item) => item.id !== line.id)
+      return next.length ? next : [emptyLine()]
+    })
+    setLogDraft({ open: false, lineId: null, message: '', visibility: 'public' })
+    setLockPrompt(null)
+    setTab('pulse')
+    setPulseTab('feed')
+  }, [lines, logDraft, firstName, avatarUrl, streak])
+
+  const setMpesaPhone = useCallback((phone: string) => {
+    setMpesaPhoneState(phone)
+    writeStore('vuna-mpesa', phone)
+  }, [])
 
   const salute = useCallback((id: string) => {
     setFeed((prev) =>
@@ -349,11 +457,19 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   const chooseActivity = useCallback((pillar: PillarId, activity: string) => {
     setLines((prev) => {
-      const [first, ...rest] = prev.length ? prev : [emptyLine()]
-      return [{ ...first, description: activity, pillar }, ...rest]
+      const draft = prev.find((l) => l.status === 'draft')
+      if (draft && !draft.description) {
+        return prev.map((l) =>
+          l.id === draft.id ? { ...l, description: activity, pillar, status: 'draft' } : l,
+        )
+      }
+      return [
+        ...prev.filter((l) => l.description || l.status === 'locked'),
+        { id: uid(), description: activity, amount: '', pillar, status: 'draft' },
+      ]
     })
     setActiveTribePillar(pillar)
-    setLockPrompt(`Stake KES on ${activity}. That is the lock.`)
+    setLockPrompt(`Enter KES and send STK. Log only after you actually do ${activity}.`)
     setProtocolError(null)
     setLiveOpen(true)
   }, [])
@@ -434,7 +550,18 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     updateLine,
     addLine,
     cancelProtocol,
-    commitProtocol,
+    stk,
+    requestStk,
+    confirmStk,
+    closeStk,
+    logDraft,
+    openLog,
+    closeLog,
+    setLogMessage,
+    setLogVisibility,
+    publishLog,
+    mpesaPhone,
+    setMpesaPhone,
     commitmentTotal,
     feed,
     pulseTab,

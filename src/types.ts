@@ -5,11 +5,15 @@ export type TabId = 'harvest' | 'lock' | 'pulse' | 'profile'
 export type { PillarId }
 export { DEFAULT_PINNED, PILLARS } from './lib/pillars'
 
+export type Visibility = 'public' | 'friends'
+export type ProtocolStatus = 'draft' | 'locked'
+
 export type ProtocolLine = {
   id: string
   description: string
   amount: string
   pillar: PillarId | ''
+  status: ProtocolStatus
 }
 
 export type FeedPost = {
@@ -22,6 +26,21 @@ export type FeedPost = {
   minutesAgo: number
   salutes: number
   saluted: boolean
+  visibility: Visibility
+}
+
+export type StkState = {
+  open: boolean
+  lineId: string | null
+  status: 'idle' | 'pushing' | 'error'
+  error: string | null
+}
+
+export type LogDraft = {
+  open: boolean
+  lineId: string | null
+  message: string
+  visibility: Visibility
 }
 
 export type LeaderRow = {

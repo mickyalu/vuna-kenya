@@ -119,7 +119,10 @@ export function PulseTab() {
                         </p>
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
-                        <p className="truncate text-[12px] text-vuna-muted">{post.tribe}</p>
+                        <p className="truncate text-[12px] text-vuna-muted">
+                          {post.tribe}
+                          {post.visibility === 'friends' ? ' · Friends' : ''}
+                        </p>
                         <span className="shrink-0 rounded-full bg-[#2a2400] px-2.5 py-1 text-[11px] font-semibold text-vuna-lime">
                           🔥 {post.streak} Day Streak
                         </span>

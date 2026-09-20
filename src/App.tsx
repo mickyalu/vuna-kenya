@@ -1,3 +1,5 @@
+import { LogSheet } from './components/LogSheet'
+import { StkSheet } from './components/StkSheet'
 import { TransferSheet } from './components/TransferSheet'
 import { BottomNav } from './components/BottomNav'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -22,6 +24,8 @@ function Shell() {
         </main>
         <BottomNav />
         <TransferSheet />
+        <StkSheet />
+        <LogSheet />
         <TribeDrawer />
       </div>
     </div>
