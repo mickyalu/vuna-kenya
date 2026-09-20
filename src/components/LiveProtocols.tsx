@@ -101,10 +101,10 @@ export function LiveProtocols() {
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <span className="font-amount text-[13px] text-vuna-muted">KES</span>
                         <input
-                          inputMode="decimal"
+                          inputMode="numeric"
                           value={line.amount}
                           onChange={(e) => updateLine(line.id, { amount: e.target.value })}
-                          placeholder="0.00"
+                          placeholder="0"
                           className="font-amount min-w-0 flex-1 bg-transparent text-right text-[22px] text-vuna-lime outline-none placeholder:text-vuna-dim"
                         />
                       </div>
@@ -116,6 +116,10 @@ export function LiveProtocols() {
                         Send STK
                       </button>
                     </>
+                  ) : line.status === 'pending' ? (
+                    <p className="mt-3 text-[12px] text-vuna-mint">
+                      Waiting for M-Pesa callback. Not credited yet.
+                    </p>
                   ) : (
                     <button
                       type="button"

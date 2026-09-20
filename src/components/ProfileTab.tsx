@@ -20,6 +20,7 @@ export function ProfileTab() {
     cardName,
     avatarUrl,
     mpesaPhone,
+    mpesaMasked,
     setMpesaPhone,
     giftWallet,
   } = useVuna()
@@ -80,10 +81,16 @@ export function ProfileTab() {
         <input
           value={mpesaPhone}
           onChange={(e) => setMpesaPhone(e.target.value)}
-          placeholder="07XX XXX XXX"
+          placeholder="07XXXXXXXX or 2547XXXXXXXX"
           inputMode="tel"
+          autoComplete="tel"
           className="mt-1 w-full bg-transparent text-[16px] text-white outline-none placeholder:text-vuna-dim"
         />
+        {mpesaMasked ? (
+          <p className="mt-1 text-[11px] text-vuna-dim">On file: {mpesaMasked}. Raw MSISDN is not stored on this device.</p>
+        ) : (
+          <p className="mt-1 text-[11px] text-vuna-dim">Stored as 2547****1234. Daraja uses 254XXXXXXXXX on the server.</p>
+        )}
       </label>
 
       <div className="grid grid-cols-2 gap-3">

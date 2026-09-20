@@ -6,7 +6,7 @@ export type { PillarId }
 export { DEFAULT_PINNED, PILLARS } from './lib/pillars'
 
 export type Visibility = 'public' | 'friends'
-export type ProtocolStatus = 'draft' | 'locked'
+export type ProtocolStatus = 'draft' | 'pending' | 'locked'
 
 export type ProtocolLine = {
   id: string
@@ -41,8 +41,12 @@ export type FeedPost = {
 export type StkState = {
   open: boolean
   lineId: string | null
-  status: 'idle' | 'pushing' | 'error'
+  status: 'idle' | 'pushing' | 'pending' | 'error' | 'success'
   error: string | null
+  checkoutRequestId: string | null
+  customerMessage: string | null
+  amountKes: number
+  activity: string
 }
 
 export type LogDraft = {
@@ -69,6 +73,7 @@ export type Composer = {
   postToPulse: boolean
   visibility: Visibility
   sending: boolean
+  checkoutRequestId: string | null
   error: string | null
 }
 
@@ -87,6 +92,7 @@ export type GiftDraft = {
   postId: string | null
   amount: 10 | 20 | 50
   sending: boolean
+  checkoutRequestId: string | null
   error: string | null
 }
 

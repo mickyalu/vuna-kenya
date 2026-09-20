@@ -28,8 +28,9 @@ export function TransferSheet() {
         </div>
 
         <p className="mb-4 text-[13px] text-vuna-muted">
-          Available to send:{' '}
-          <KesAmount value={deposits} className="text-[13px]" />
+          Available on the protocol card:{' '}
+          <KesAmount value={deposits} className="text-[13px]" />. Safaricom B2C is not live in this
+          sandbox — this will not send money.
         </p>
 
         <label className="mb-3 block">
@@ -52,8 +53,8 @@ export function TransferSheet() {
           <input
             value={transfer.amount}
             onChange={(e) => updateTransfer({ amount: e.target.value, error: null, success: null })}
-            placeholder="0.00"
-            inputMode="decimal"
+            placeholder="0"
+            inputMode="numeric"
             className="font-amount w-full rounded-xl border border-vuna-border bg-vuna-raised px-3 py-3 text-[18px] text-white outline-none placeholder:text-vuna-dim"
           />
         </label>
@@ -70,7 +71,7 @@ export function TransferSheet() {
           onClick={sendTransfer}
           className="w-full rounded-full bg-vuna-lime py-3 text-[15px] font-semibold text-black"
         >
-          Send via M-Pesa
+          Explain sandbox
         </button>
       </div>
     </div>

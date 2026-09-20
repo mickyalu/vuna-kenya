@@ -2,7 +2,7 @@
 
 VUNA is a Kenya-first habit lock app. You commit KES against atomic habits over M-Pesa rails, track a Behavioral Commitment Index, and share verified wins with your tribe.
 
-This is a local, in-browser prototype. Balances, streaks, and transfers live in React state — no backend, no real M-Pesa settlement.
+This prototype now includes a **server STK loop** for CMA / Daraja review. Without `DARAJA_*` secrets it mocks the callback after ~1.8s. Goal balance still moves only after that callback.
 
 ## Screens
 
@@ -20,7 +20,17 @@ npm install
 npm run dev
 ```
 
-The Vite server binds to `http://127.0.0.1:43173`.
+The Vite server binds to `http://127.0.0.1:43173` and serves `/api/*` (STK push, status, callback).
+
+Copy `.env.example` to `.env.local` and add Daraja sandbox keys when Safaricom issues them. Never put Consumer Key, Secret, or Passkey in `VITE_*` variables.
+
+```bash
+npm test
+```
+
+Runs MSISDN, integer KES, PII mask, and callback idempotency checks. See `SECURITY.md` for the CMA audit.
+
+## Stack
 
 ## Stack
 

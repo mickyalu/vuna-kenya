@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { safeWindow } from '../lib/runtime'
 
 type Props = { children: ReactNode }
 type State = { error: Error | null }
@@ -10,8 +11,9 @@ export class ErrorBoundary extends Component<Props, State> {
     return { error }
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('VUNA render failed', error, info.componentStack)
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    const name = error?.name || 'Error'
+    if (typeof console !== 'undefined') console.error('VUNA render failed', name)
   }
 
   render() {
@@ -26,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <button
           type="button"
           className="mt-6 rounded-full bg-[#CCFF00] px-5 py-3 text-[14px] font-semibold text-black"
-          onClick={() => window.location.reload()}
+          onClick={() => safeWindow()?.location.reload()}
         >
           Reload
         </button>

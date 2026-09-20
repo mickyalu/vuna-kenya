@@ -99,9 +99,18 @@ export function GiftSheet() {
 
         {giftDraft.error ? (
           <p className="mb-3 text-[12px] text-[#f07167]">{giftDraft.error}</p>
+        ) : sending ? (
+          <p className="mb-3 text-[12px] leading-snug text-vuna-mint">
+            Waiting for the paybill callback. Gift wallet moves only after ResultCode 0.
+            {giftDraft.checkoutRequestId ? (
+              <span className="mt-1 block font-mono text-[11px] text-vuna-dim">
+                {giftDraft.checkoutRequestId}
+              </span>
+            ) : null}
+          </p>
         ) : (
           <p className="mb-3 text-[12px] text-vuna-dim">
-            Demo STK to paybill {VUNA_PAYBILL} · KES {giftDraft.amount.toFixed(2)}. Protocol stays
+            STK to paybill {VUNA_PAYBILL} · KES {giftDraft.amount} even shillings. Protocol stays
             untouched.
           </p>
         )}
@@ -112,7 +121,7 @@ export function GiftSheet() {
           disabled={sending}
           className="w-full rounded-full bg-vuna-lime py-3.5 text-[15px] font-semibold text-black disabled:opacity-60"
         >
-          {sending ? 'Waiting for PIN…' : `Send KES ${giftDraft.amount} to paybill`}
+          {sending ? 'Waiting for M-Pesa…' : `Send KES ${giftDraft.amount} to paybill`}
         </button>
         <button
           type="button"

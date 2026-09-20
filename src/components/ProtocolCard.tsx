@@ -14,8 +14,9 @@ export function ProtocolCard() {
     avatarUrl,
     balanceHidden,
     toggleBalanceHidden,
+    confirmedLockKes,
   } = useVuna()
-  const liveTick = useYieldTick(tickingYield)
+  const liveTick = useYieldTick(tickingYield, 0.0003, 1200, confirmedLockKes > 0)
 
   return (
     <section

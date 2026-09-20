@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
 import { parseKesInput } from '../lib/money'
+import { toKesInteger } from '../lib/mpesa'
 import { useVuna } from '../store/VunaContext'
 import { KesAmount } from './KesAmount'
 
@@ -65,10 +66,10 @@ export function LockComposer() {
             <span className="font-amount text-[16px] text-vuna-muted">KES</span>
             <input
               autoFocus
-              inputMode="decimal"
+              inputMode="numeric"
               value={composer.amount}
               onChange={(e) => updateComposer({ amount: e.target.value })}
-              placeholder="0.00"
+              placeholder="0"
               disabled={sending}
               className="font-amount min-w-0 flex-1 bg-transparent text-[32px] leading-none text-vuna-lime outline-none placeholder:text-vuna-dim"
             />
@@ -154,9 +155,19 @@ export function LockComposer() {
 
         {composer.error ? (
           <p className="mt-3 text-[12px] text-[#f07167]">{composer.error}</p>
+        ) : composer.sending ? (
+          <p className="mt-3 text-[12px] leading-snug text-vuna-mint">
+            Waiting for the M-Pesa callback. Balance will not move until ResultCode 0.
+            {composer.checkoutRequestId ? (
+              <span className="mt-1 block font-mono text-[11px] text-vuna-dim">
+                {composer.checkoutRequestId}
+              </span>
+            ) : null}
+          </p>
         ) : (
           <p className="mt-3 text-[12px] text-vuna-dim">
-            Demo STK — Safaricom will prompt this number. Nothing leaves the device yet.
+            STK amount is a whole shilling (KES {toKesInteger(composer.amount) || 0}). Enter PIN on the
+            Safaricom prompt — VUNA never sees it.
           </p>
         )}
 
@@ -166,7 +177,7 @@ export function LockComposer() {
           disabled={sending}
           className="mt-4 w-full rounded-full bg-vuna-lime py-3.5 text-[15px] font-semibold text-black disabled:opacity-60"
         >
-          {sending ? 'Waiting for PIN…' : kes > 0 ? `Send STK · KES ${kes.toFixed(2)}` : 'Send STK'}
+          {sending ? 'Waiting for M-Pesa…' : kes > 0 ? `Send STK · KES ${toKesInteger(composer.amount)}` : 'Send STK'}
         </button>
         <button
           type="button"
@@ -178,7 +189,7 @@ export function LockComposer() {
         </button>
         {kes > 0 ? (
           <p className="pb-1 text-center text-[11px] text-vuna-dim">
-            Locking <KesAmount value={kes} className="text-[11px]" /> against {composer.activity}.
+            Locking <KesAmount value={toKesInteger(composer.amount) || kes} className="text-[11px]" /> against {composer.activity}.
           </p>
         ) : null}
       </div>

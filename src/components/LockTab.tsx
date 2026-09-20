@@ -12,8 +12,9 @@ export function LockTab() {
     deposits,
     yieldEarned,
     openTransfer,
+    confirmedLockKes,
   } = useVuna()
-  const liveYield = useYieldTick(yieldEarned, 0.0003, 1200)
+  const liveYield = useYieldTick(yieldEarned, 0.0003, 1200, confirmedLockKes > 0)
   const liveHarvest = deposits + liveYield
 
   return (

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -16,8 +17,21 @@ import {
   type Club,
 } from '../lib/tribes'
 import { parseKesInput } from '../lib/money'
+import { isMsisdn, maskMsisdn, toKesInteger, toMsisdn } from '../lib/mpesa'
 import { describeNotify } from '../lib/notify'
-import { clearVunaStore, readJson, readStore, writeStore } from '../lib/storage'
+import { later, safeDocument, safeWindow } from '../lib/runtime'
+import {
+  clearPendingStk,
+  loadCredits,
+  loadPendingStk,
+  lockKesFromCredits,
+  rememberCredit,
+  savePendingStk,
+  type CreditRow,
+  type PendingStk,
+} from '../lib/credits'
+import { clearVunaStore, readJson, readStore, removeStore, writeStore } from '../lib/storage'
+import { getStkStatus, pollStkStatus, pushStk, registerMsisdn } from '../lib/stk-client'
 import {
   DEFAULT_PINNED,
   emptyPillarTotals,
@@ -38,9 +52,11 @@ import type {
   TransferState,
   Visibility,
 } from '../types'
+import type { PublicStkStatus } from '../../shared/stk-types'
 import { DEFAULT_GIFT_AMOUNT } from '../lib/paybill'
 
 const GOAL_TARGET_KES = 43750
+const SEED_DEPOSITS = 87.5
 
 function uid() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -63,12 +79,38 @@ function emptyComposer(): Composer {
     postToPulse: false,
     visibility: 'public',
     sending: false,
+    checkoutRequestId: null,
     error: null,
   }
 }
 
+function idleStk(): StkState {
+  return {
+    open: false,
+    lineId: null,
+    status: 'idle',
+    error: null,
+    checkoutRequestId: null,
+    customerMessage: null,
+    amountKes: 0,
+    activity: '',
+  }
+}
+
 function isSafaricom(phone: string) {
-  return /^(\+?254|0)7\d{8}$/.test(phone.replace(/\s/g, ''))
+  return isMsisdn(phone)
+}
+
+function hydratePillars(credits: CreditRow[]) {
+  const next = emptyPillarTotals()
+  for (const row of credits) {
+    if (row.kind !== 'lock') continue
+    if ((PILLARS as string[]).includes(row.pillar)) {
+      const id = row.pillar as PillarId
+      next[id] += row.amountKes
+    }
+  }
+  return next
 }
 
 const INITIAL_FEED: FeedPost[] = [
@@ -174,7 +216,10 @@ type VunaState = {
   setLogVisibility: (visibility: Visibility) => void
   publishLog: () => void
   mpesaPhone: string
+  mpesaMasked: string
   setMpesaPhone: (phone: string) => void
+  handleBack: () => boolean
+  confirmedLockKes: number
   commitmentTotal: number
   feed: FeedPost[]
   pulseTab: 'feed' | 'leaderboard'
@@ -246,13 +291,15 @@ const VunaContext = createContext<VunaState | null>(null)
 
 export function VunaProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>('harvest')
-  const [deposits, setDeposits] = useState(87.5)
+  const [deposits, setDeposits] = useState(() => SEED_DEPOSITS + lockKesFromCredits(loadCredits()))
   const [yieldEarned] = useState(8)
   const tickingYield = 0.1641
   const [lockMonths] = useState(12)
   const [daysRemaining] = useState(280)
   const [goalName] = useState('General Wealth')
-  const [pillars, setPillars] = useState<Record<PillarId, number>>(emptyPillarTotals)
+  const [pillars, setPillars] = useState<Record<PillarId, number>>(() =>
+    hydratePillars(loadCredits()),
+  )
   const [pinnedPillars, setPinnedPillars] = useState<PillarId[]>(() => {
     try {
       const raw = readStore('vuna-pinned-pillars')
@@ -280,6 +327,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     postId: null,
     amount: DEFAULT_GIFT_AMOUNT,
     sending: false,
+    checkoutRequestId: null,
     error: null,
   })
   const [inbox, setInbox] = useState<InAppNotice[]>([SEED_GIFT_NOTICE])
@@ -310,15 +358,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     return AVATAR_CHOICES.some((a) => a.id === stored) ? stored! : DEFAULT_AVATAR_ID
   })
   const avatarUrl = avatarUrlById(avatarId)
-  const [mpesaPhone, setMpesaPhoneState] = useState(
-    () => readStore('vuna-mpesa') || '',
+  const [mpesaPhone, setMpesaPhoneState] = useState('')
+  const [mpesaMasked, setMpesaMasked] = useState(
+    () => readStore('vuna-mpesa-masked') || '',
   )
-  const [stk, setStk] = useState<StkState>({
-    open: false,
-    lineId: null,
-    status: 'idle',
-    error: null,
-  })
+  const [stk, setStk] = useState<StkState>(idleStk)
   const [logDraft, setLogDraft] = useState<LogDraft>({
     open: false,
     lineId: null,
@@ -334,26 +378,26 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   })
   const [composer, setComposer] = useState<Composer>(emptyComposer)
   const [notice, setNotice] = useState<InAppNotice | null>(null)
+  const resumed = useRef(false)
 
   useEffect(() => {
     if (!lockPrompt) return
-    const id = window.setTimeout(() => setLockPrompt(null), 4200)
-    return () => window.clearTimeout(id)
+    return later(() => setLockPrompt(null), 4200)
   }, [lockPrompt])
 
   useEffect(() => {
     if (!notice) return
-    const id = window.setTimeout(() => setNotice(null), 8000)
-    return () => window.clearTimeout(id)
+    return later(() => setNotice(null), 8000)
   }, [notice])
 
   useEffect(() => {
-    const id = window.setTimeout(() => setNotice(SEED_GIFT_NOTICE), 700)
-    return () => window.clearTimeout(id)
+    return later(() => setNotice(SEED_GIFT_NOTICE), 700)
   }, [])
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
+    const w = safeWindow()
+    if (!w) return
+    const params = new URLSearchParams(w.location.search)
     const token = params.get('join')
     if (!token) return
     const custom = readJson<Club[]>('vuna-custom-clubs', [])
@@ -378,7 +422,24 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       setInbox((prev) => [item, ...prev])
       setNotice(item)
     }
-    window.history.replaceState({}, '', window.location.pathname)
+    try {
+      w.history.replaceState({}, '', w.location.pathname)
+    } catch {
+      /* Mini App */
+    }
+  }, [])
+
+  useEffect(() => {
+    const legacy = readStore('vuna-mpesa')
+    if (!legacy) return
+    const n = toMsisdn(legacy)
+    removeStore('vuna-mpesa')
+    if (!n) return
+    setMpesaPhoneState(n)
+    const masked = maskMsisdn(n)
+    setMpesaMasked(masked)
+    writeStore('vuna-mpesa-masked', masked)
+    void registerMsisdn(n).catch(() => {})
   }, [])
 
   const commitmentTotal = useMemo(
@@ -421,8 +482,203 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     })
     setProtocolError(null)
     setLockPrompt(null)
-    setStk({ open: false, lineId: null, status: 'idle', error: null })
+    setStk(idleStk())
   }, [])
+
+  const applyConfirmed = useCallback(
+    (status: PublicStkStatus, pending: PendingStk | null) => {
+      const { added } = rememberCredit(status)
+      if (!added) {
+        clearPendingStk()
+        return
+      }
+      if (status.kind === 'lock') {
+        setDeposits((v) => v + status.amountKes)
+        if ((PILLARS as string[]).includes(status.pillar)) {
+          const pillar = status.pillar as PillarId
+          setPillars((prev) => ({ ...prev, [pillar]: prev[pillar] + status.amountKes }))
+        }
+        setLines((prev) =>
+          prev.map((item) =>
+            item.id === status.habitId || item.id === pending?.habitId
+              ? { ...item, status: 'locked' as const, amount: String(status.amountKes) }
+              : item,
+          ),
+        )
+        setLockPrompt('Locked after M-Pesa callback. When you finish, tap I did it — logging is optional.')
+        setLiveOpen(false)
+        const posted = Boolean(pending?.postToPulse)
+        if (posted && pending) {
+          setFeed((prev) => [
+            {
+              id: uid(),
+              handle: `@${cardName}`,
+              tribe: pending.pillar ? `${titleCasePillar(pending.pillar as PillarId)} Tribe` : 'Vuna',
+              avatar: avatarUrl,
+              text: pending.caption || `${status.activity} — locked.`,
+              streak,
+              minutesAgo: 0,
+              salutes: 0,
+              saluted: false,
+              visibility: pending.visibility || 'public',
+            },
+            ...prev,
+          ])
+        }
+        setInbox((prev) => [
+          {
+            id: uid(),
+            kind: 'stk',
+            title: 'Congratulations',
+            body: describeNotify({
+              kind: 'stk_success',
+              activity: status.activity,
+              kes: status.amountKes,
+              posted,
+            }),
+            unread: true,
+          },
+          ...prev,
+        ])
+        setNotice({
+          id: uid(),
+          kind: 'stk',
+          title: 'Congratulations',
+          body: describeNotify({
+            kind: 'stk_success',
+            activity: status.activity,
+            kes: status.amountKes,
+            posted,
+          }),
+          unread: true,
+        })
+      } else if (status.kind === 'gift') {
+        const toHandle = pending?.giftTo || 'a friend'
+        setFeed((prev) => [
+          {
+            id: uid(),
+            kind: 'gift',
+            handle: `@${cardName}`,
+            tribe: 'Vuna Gift',
+            avatar: avatarUrl,
+            text: `sent ${toHandle} a Vuna Gift`,
+            streak,
+            minutesAgo: 0,
+            salutes: 0,
+            saluted: false,
+            visibility: 'public',
+            giftKes: status.amountKes,
+            giftFrom: `@${cardName}`,
+            giftFromAvatar: avatarUrl,
+            giftTo: toHandle,
+            giftReply: null,
+          },
+          ...prev,
+        ])
+        setTab('pulse')
+        setPulseTab('feed')
+        setInbox((prev) => [
+          {
+            id: uid(),
+            kind: 'gift_sent',
+            title: 'Gift is live',
+            body: describeNotify({ kind: 'gift_sent', handle: toHandle, kes: status.amountKes }),
+            unread: true,
+          },
+          ...prev,
+        ])
+        setNotice({
+          id: uid(),
+          kind: 'gift_sent',
+          title: 'Gift is live',
+          body: describeNotify({ kind: 'gift_sent', handle: toHandle, kes: status.amountKes }),
+          unread: true,
+        })
+      }
+      clearPendingStk()
+    },
+    [avatarUrl, cardName, streak],
+  )
+
+  const watchStk = useCallback(
+    async (pending: PendingStk) => {
+      try {
+        const row = await pollStkStatus(pending.checkoutRequestId, (tick) => {
+          if (pending.kind === 'lock') {
+            setStk((s) => ({
+              ...s,
+              status: tick.status === 'pending' ? 'pending' : s.status,
+              checkoutRequestId: tick.checkoutRequestId,
+            }))
+            setComposer((c) =>
+              c.checkoutRequestId === tick.checkoutRequestId
+                ? { ...c, sending: tick.status === 'pending' }
+                : c,
+            )
+          }
+        })
+        if (row.status === 'success') {
+          applyConfirmed(row, pending)
+          setStk(idleStk())
+          setComposer(emptyComposer())
+          setGiftDraft((g) => ({
+            ...g,
+            open: false,
+            sending: false,
+            checkoutRequestId: null,
+            postId: null,
+          }))
+        } else {
+          const msg =
+            row.status === 'cancelled'
+              ? 'You cancelled the Safaricom prompt. Goal balance was not changed.'
+              : row.resultDesc || 'STK did not complete. Goal balance was not changed.'
+          setStk((s) => ({ ...s, status: 'error', error: msg }))
+          setComposer((c) => ({ ...c, sending: false, error: msg }))
+          setGiftDraft((g) => ({ ...g, sending: false, error: msg }))
+          clearPendingStk()
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Could not read STK status.'
+        setStk((s) => ({ ...s, status: 'error', error: msg }))
+        setComposer((c) => ({ ...c, sending: false, error: msg }))
+        setGiftDraft((g) => ({ ...g, sending: false, error: msg }))
+      }
+    },
+    [applyConfirmed],
+  )
+
+  useEffect(() => {
+    const pending = loadPendingStk()
+    if (!pending || resumed.current) return
+    resumed.current = true
+    void (async () => {
+      try {
+        const row = await getStkStatus(pending.checkoutRequestId)
+        if (row.status === 'success') {
+          applyConfirmed(row, pending)
+          return
+        }
+        if (row.status === 'pending') {
+          setStk({
+            open: true,
+            lineId: pending.kind === 'lock' ? pending.habitId : null,
+            status: 'pending',
+            error: null,
+            checkoutRequestId: pending.checkoutRequestId,
+            customerMessage: 'Waiting for the M-Pesa callback. Balance will not move until ResultCode 0.',
+            amountKes: pending.amountKes,
+            activity: pending.activity,
+          })
+          await watchStk(pending)
+          return
+        }
+        clearPendingStk()
+      } catch {
+        await watchStk(pending)
+      }
+    })()
+  }, [applyConfirmed, watchStk])
 
   const requestStk = useCallback(
     (lineId: string) => {
@@ -435,60 +691,79 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         setProtocolError('Select a pillar before STK.')
         return
       }
-      if (parseKesInput(line.amount) <= 0) {
-        setProtocolError('Enter a KES amount, then Safaricom can prompt you.')
+      if (toKesInteger(line.amount) <= 0) {
+        setProtocolError('Enter a whole-shilling KES amount, then Safaricom can prompt you.')
         return
       }
-      if (!isSafaricom(mpesaPhone)) {
+      if (!isSafaricom(mpesaPhone) && !mpesaMasked) {
         setProtocolError('Add a Safaricom number on Profile, then send STK.')
         return
       }
       setProtocolError(null)
-      setStk({ open: true, lineId, status: 'idle', error: null })
+      setStk({
+        ...idleStk(),
+        open: true,
+        lineId,
+        amountKes: toKesInteger(line.amount),
+        activity: line.description,
+      })
     },
-    [lines, mpesaPhone],
+    [lines, mpesaPhone, mpesaMasked],
   )
 
   const closeStk = useCallback(() => {
-    setStk({ open: false, lineId: null, status: 'idle', error: null })
+    setStk((s) => (s.status === 'pending' || s.status === 'pushing' ? { ...s, open: false } : idleStk()))
   }, [])
 
-  const confirmStk = useCallback(() => {
+  const confirmStk = useCallback(async () => {
     const line = lines.find((l) => l.id === stk.lineId)
     if (!line) {
-      setStk({ open: false, lineId: null, status: 'idle', error: null })
+      setStk(idleStk())
       return
     }
+    const amountKes = toKesInteger(line.amount)
     setStk((s) => ({ ...s, status: 'pushing', error: null }))
-    window.setTimeout(() => {
-      const kes = parseKesInput(line.amount)
-      setDeposits((v) => v + kes)
-      if (line.pillar) {
-        const pillar = line.pillar
-        setPillars((prev) => ({ ...prev, [pillar]: prev[pillar] + kes }))
+    try {
+      const pushed = await pushStk({
+        phone: mpesaPhone || undefined,
+        amount: amountKes,
+        habitId: line.id,
+        activity: line.description,
+        pillar: line.pillar || 'FITNESS',
+        kind: 'lock',
+      })
+      const pending: PendingStk = {
+        checkoutRequestId: pushed.checkoutRequestID,
+        kind: 'lock',
+        habitId: line.id,
+        activity: line.description,
+        pillar: line.pillar || 'FITNESS',
+        amountKes,
+        startedAt: new Date().toISOString(),
       }
+      savePendingStk(pending)
       setLines((prev) =>
-        prev.map((item) => (item.id === line.id ? { ...item, status: 'locked' as const } : item)),
+        prev.map((item) => (item.id === line.id ? { ...item, status: 'pending' as const } : item)),
       )
-      setStk({ open: false, lineId: null, status: 'idle', error: null })
-      setLockPrompt('Locked. When you finish, tap I did it — or say nothing. Logging is optional.')
-      const stkNotice: InAppNotice = {
-        id: uid(),
-        kind: 'stk',
-        title: 'Congratulations',
-        body: describeNotify({
-          kind: 'stk_success',
-          activity: line.description,
-          kes,
-          posted: false,
-        }),
-        unread: true,
-      }
-      setInbox((prev) => [stkNotice, ...prev])
-      setNotice(stkNotice)
-      setLiveOpen(false)
-    }, 1100)
-  }, [lines, stk.lineId])
+      setStk({
+        open: true,
+        lineId: line.id,
+        status: 'pending',
+        error: null,
+        checkoutRequestId: pushed.checkoutRequestID,
+        customerMessage: pushed.customerMessage,
+        amountKes,
+        activity: line.description,
+      })
+      await watchStk(pending)
+    } catch (err) {
+      setStk((s) => ({
+        ...s,
+        status: 'error',
+        error: err instanceof Error ? err.message : 'STK push failed.',
+      }))
+    }
+  }, [lines, stk.lineId, mpesaPhone, watchStk])
 
   const openLog = useCallback((lineId: string) => {
     const line = lines.find((l) => l.id === lineId)
@@ -549,7 +824,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   const setMpesaPhone = useCallback((phone: string) => {
     setMpesaPhoneState(phone)
-    writeStore('vuna-mpesa', phone)
+    const n = toMsisdn(phone)
+    if (!n) return
+    const masked = maskMsisdn(n)
+    setMpesaMasked(masked)
+    writeStore('vuna-mpesa-masked', masked)
+    void registerMsisdn(n).catch(() => {})
   }, [])
 
   const pushNotice = useCallback((item: InAppNotice) => {
@@ -575,6 +855,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       postId,
       amount: DEFAULT_GIFT_AMOUNT,
       sending: false,
+      checkoutRequestId: null,
       error: null,
     })
   }, [])
@@ -587,73 +868,49 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setGiftDraft((g) => (g.sending ? g : { ...g, amount, error: null }))
   }, [])
 
-  const sendGift = useCallback(() => {
+  const sendGift = useCallback(async () => {
     if (giftDraft.sending || !giftDraft.postId) return
     const post = feed.find((p) => p.id === giftDraft.postId)
     if (!post) return
-    if (!isSafaricom(mpesaPhone)) {
+    if (!isSafaricom(mpesaPhone) && !mpesaMasked) {
       setGiftDraft((g) => ({ ...g, error: 'Add your Safaricom number so the STK can land.' }))
       return
     }
-    const kes = giftDraft.amount
+    const kes = toKesInteger(giftDraft.amount)
     const toHandle = post.handle
     setGiftDraft((g) => ({ ...g, sending: true, error: null }))
-    window.setTimeout(() => {
-      const giftId = uid()
-      setFeed((prev) => [
-        {
-          id: giftId,
-          kind: 'gift',
-          handle: `@${cardName}`,
-          tribe: post.tribe,
-          avatar: avatarUrl,
-          text: `sent ${toHandle} a Vuna Gift`,
-          streak,
-          minutesAgo: 0,
-          salutes: 0,
-          saluted: false,
-          visibility: 'public',
-          giftKes: kes,
-          giftFrom: `@${cardName}`,
-          giftFromAvatar: avatarUrl,
-          giftTo: toHandle,
-          giftReply: null,
-        },
-        ...prev,
-      ])
-      setGiftDraft({
-        open: false,
-        postId: null,
-        amount: DEFAULT_GIFT_AMOUNT,
+    try {
+      const pushed = await pushStk({
+        phone: mpesaPhone || undefined,
+        amount: kes,
+        habitId: `gift-${post.id}`,
+        activity: `Vuna Gift ${toHandle}`,
+        pillar: 'COMMUNITY',
+        kind: 'gift',
+        accountReference: 'GIFT',
+      })
+      const pending: PendingStk = {
+        checkoutRequestId: pushed.checkoutRequestID,
+        kind: 'gift',
+        habitId: `gift-${post.id}`,
+        activity: `Vuna Gift ${toHandle}`,
+        pillar: 'COMMUNITY',
+        amountKes: kes,
+        giftTo: toHandle,
+        giftPostId: post.id,
+        startedAt: new Date().toISOString(),
+      }
+      savePendingStk(pending)
+      setGiftDraft((g) => ({ ...g, sending: true, checkoutRequestId: pushed.checkoutRequestID }))
+      await watchStk(pending)
+    } catch (err) {
+      setGiftDraft((g) => ({
+        ...g,
         sending: false,
-        error: null,
-      })
-      setTab('pulse')
-      setPulseTab('feed')
-      pushNotice({
-        id: uid(),
-        kind: 'gift_sent',
-        title: 'Gift is live',
-        body: describeNotify({ kind: 'gift_sent', handle: toHandle, kes }),
-      })
-      window.setTimeout(() => {
-        const reply = 'Asante. See you on the trail.'
-        setFeed((prev) =>
-          prev.map((item) =>
-            item.id === giftId
-              ? { ...item, giftReply: reply, giftReplyFrom: toHandle }
-              : item,
-          ),
-        )
-        pushNotice({
-          id: uid(),
-          kind: 'gift_reply',
-          title: `${toHandle} replied`,
-          body: describeNotify({ kind: 'gift_reply', handle: toHandle, text: reply }),
-        })
-      }, 1800)
-    }, 1100)
-  }, [giftDraft, feed, mpesaPhone, cardName, avatarUrl, streak, pushNotice])
+        error: err instanceof Error ? err.message : 'Gift STK failed.',
+      }))
+    }
+  }, [giftDraft, feed, mpesaPhone, mpesaMasked, watchStk])
 
   const replyGift = useCallback(
     (postId: string, message: string) => {
@@ -834,7 +1091,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   const eraseDevice = useCallback(() => {
     clearVunaStore()
-    window.location.reload()
+    const w = safeWindow()
+    if (w) w.location.reload()
   }, [])
 
   const connectWhatsApp = useCallback(() => {
@@ -842,10 +1100,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const inviteContacts = useCallback(() => {
-    const text = encodeURIComponent(
-      'Join me on VUNA — lock KES against your habits and harvest consistency. https://vuna.app',
-    )
-    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
+    const text = 'Join me on VUNA — lock KES against your habits and harvest consistency. https://vuna.app'
+    const w = safeWindow()
+    if (w?.open) {
+      w.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+    }
   }, [])
 
   const openTransfer = useCallback(() => {
@@ -918,6 +1177,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       postToPulse: false,
       visibility: 'public',
       sending: false,
+      checkoutRequestId: null,
       error: null,
     })
   }, [])
@@ -934,22 +1194,22 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setNotice(null)
   }, [])
 
-  const sendComposerStk = useCallback(() => {
+  const sendComposerStk = useCallback(async () => {
     if (composer.sending) return
     const activity = composer.activity.trim()
     if (!activity || !composer.pillar) {
       setComposer((c) => ({ ...c, error: 'Pick an activity first.' }))
       return
     }
-    const kes = parseKesInput(composer.amount)
+    const kes = toKesInteger(composer.amount)
     if (kes <= 0) {
       setComposer((c) => ({
         ...c,
-        error: 'Enter a KES amount, then Safaricom can prompt you.',
+        error: 'M-Pesa takes whole shillings. Enter at least KES 1.',
       }))
       return
     }
-    if (!isSafaricom(mpesaPhone)) {
+    if (!isSafaricom(mpesaPhone) && !mpesaMasked) {
       setComposer((c) => ({
         ...c,
         error: 'Add your Safaricom number so the STK can land.',
@@ -961,48 +1221,60 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     const caption = composer.caption.trim()
     const postToPulse = composer.postToPulse
     const visibility = composer.visibility
+    const habitId = uid()
     setComposer((c) => ({ ...c, sending: true, error: null }))
     setNotice(null)
-
-    window.setTimeout(() => {
-      setDeposits((v) => v + kes)
-      setPillars((prev) => ({ ...prev, [pillar]: prev[pillar] + kes }))
-      setTotalWins((v) => v + 1)
-      setStreak((v) => v + 1)
-      if (postToPulse) {
-        setFeed((prev) => [
-          {
-            id: uid(),
-            handle: `@${cardName}`,
-            tribe: `${titleCasePillar(pillar)} Tribe`,
-            avatar: avatarUrl,
-            text: caption || `${activity} — locked.`,
-            streak: streak + 1,
-            minutesAgo: 0,
-            salutes: 0,
-            saluted: false,
-            visibility,
-          },
-          ...prev,
-        ])
+    try {
+      const pushed = await pushStk({
+        phone: mpesaPhone || undefined,
+        amount: kes,
+        habitId,
+        activity,
+        pillar,
+        kind: 'lock',
+      })
+      const pending: PendingStk = {
+        checkoutRequestId: pushed.checkoutRequestID,
+        kind: 'lock',
+        habitId,
+        activity,
+        pillar,
+        amountKes: kes,
+        postToPulse,
+        caption,
+        visibility,
+        startedAt: new Date().toISOString(),
       }
-      setComposer(emptyComposer())
-      const stkNotice: InAppNotice = {
-        id: uid(),
-        kind: 'stk',
-        title: 'Congratulations',
-        body: describeNotify({ kind: 'stk_success', activity, kes, posted: postToPulse }),
-        unread: true,
-      }
-      setInbox((prev) => [stkNotice, ...prev])
-      setNotice(stkNotice)
-    }, 1100)
-  }, [composer, mpesaPhone, cardName, avatarUrl, streak])
+      savePendingStk(pending)
+      setLines((prev) => [
+        { id: habitId, description: activity, amount: String(kes), pillar, status: 'pending' },
+        ...prev.filter((l) => l.description || l.status === 'locked' || l.status === 'pending'),
+      ])
+      setComposer((c) => ({ ...c, sending: true, checkoutRequestId: pushed.checkoutRequestID }))
+      setStk({
+        open: false,
+        lineId: habitId,
+        status: 'pending',
+        error: null,
+        checkoutRequestId: pushed.checkoutRequestID,
+        customerMessage: pushed.customerMessage,
+        amountKes: kes,
+        activity,
+      })
+      await watchStk(pending)
+    } catch (err) {
+      setComposer((c) => ({
+        ...c,
+        sending: false,
+        error: err instanceof Error ? err.message : 'STK push failed.',
+      }))
+    }
+  }, [composer, mpesaPhone, mpesaMasked, watchStk])
 
   const openTribes = useCallback(() => {
     setTab('profile')
-    window.setTimeout(() => {
-      document.getElementById('vuna-tribes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    later(() => {
+      safeDocument()?.getElementById('vuna-tribes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
   }, [])
 
@@ -1021,37 +1293,69 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const sendTransfer = useCallback(() => {
-    const amount = parseKesInput(transfer.amount)
-    const phone = transfer.phone.replace(/\s/g, '')
-    if (!/^(\+?254|0)7\d{8}$/.test(phone)) {
+    const amount = toKesInteger(transfer.amount)
+    const msisdn = toMsisdn(transfer.phone)
+    if (!msisdn) {
       setTransfer((t) => ({
         ...t,
-        error: 'Enter a valid Safaricom number (07XX or +2547XX).',
+        error: 'Enter a Safaricom MSISDN (07XXXXXXXX or 2547XXXXXXXX).',
         success: null,
       }))
       return
     }
     if (amount <= 0) {
-      setTransfer((t) => ({ ...t, error: 'Enter a KES amount to send.', success: null }))
+      setTransfer((t) => ({ ...t, error: 'Enter a whole-shilling KES amount.', success: null }))
       return
     }
-    if (amount > deposits) {
-      setTransfer((t) => ({
-        ...t,
-        error: `Only ${deposits.toFixed(2)} KES is liquid enough to send.`,
-        success: null,
-      }))
-      return
-    }
-    setDeposits((v) => v - amount)
-    setTransfer({
-      open: true,
-      phone,
-      amount: '',
+    setTransfer((t) => ({
+      ...t,
       error: null,
-      success: `M-Pesa request sent to ${phone} for KES ${amount.toFixed(2)}.`,
-    })
-  }, [deposits, transfer.amount, transfer.phone])
+      success: `B2C payout is not live in the CMA sandbox. ${maskMsisdn(msisdn)} was not charged. Confirmed protocol deposits stay until Safaricom B2C is enabled.`,
+    }))
+  }, [transfer.amount, transfer.phone])
+
+  const handleBack = useCallback(() => {
+    if (inboxOpen) {
+      setInboxOpen(false)
+      return true
+    }
+    if (giftDraft.open) {
+      setGiftDraft((g) => (g.sending ? { ...g, open: false } : { ...g, open: false, postId: null }))
+      return true
+    }
+    if (composer.open) {
+      if (!composer.sending) setComposer(emptyComposer())
+      else setComposer((c) => ({ ...c, open: true }))
+      return true
+    }
+    if (stk.open) {
+      setStk((s) => ({ ...s, open: false }))
+      return true
+    }
+    if (transfer.open) {
+      setTransfer((t) => ({ ...t, open: false }))
+      return true
+    }
+    if (logDraft.open) {
+      setLogDraft({ open: false, lineId: null, message: '', visibility: 'public' })
+      return true
+    }
+    if (liveOpen) {
+      setLiveOpen(false)
+      return true
+    }
+    if (notice) {
+      setNotice(null)
+      return true
+    }
+    if (tab !== 'harvest') {
+      setTab('harvest')
+      return true
+    }
+    return false
+  }, [inboxOpen, giftDraft.open, composer.open, composer.sending, stk.open, transfer.open, logDraft.open, liveOpen, notice, tab])
+
+  const confirmedLockKes = lockKesFromCredits(loadCredits())
 
   const value: VunaState = {
     tab,
@@ -1084,7 +1388,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setLogVisibility,
     publishLog,
     mpesaPhone,
+    mpesaMasked,
     setMpesaPhone,
+    handleBack,
+    confirmedLockKes,
     commitmentTotal,
     feed,
     pulseTab,
