@@ -507,6 +507,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setActiveTribePillar(pillar)
     setProtocolError(null)
     setLiveOpen(false)
+    setNotice(null)
     setComposer({
       open: true,
       pillar,
@@ -560,6 +561,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     const postToPulse = composer.postToPulse
     const visibility = composer.visibility
     setComposer((c) => ({ ...c, sending: true, error: null }))
+    setNotice(null)
 
     window.setTimeout(() => {
       setDeposits((v) => v + kes)

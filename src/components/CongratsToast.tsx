@@ -2,8 +2,8 @@ import { Check } from 'lucide-react'
 import { useVuna } from '../store/VunaContext'
 
 export function CongratsToast() {
-  const { notice, dismissNotice } = useVuna()
-  if (!notice) return null
+  const { notice, dismissNotice, composer } = useVuna()
+  if (!notice || composer.open) return null
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
