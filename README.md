@@ -32,5 +32,6 @@ React 19, TypeScript, Vite, Tailwind CSS, Lucide icons.
 2. The lock sheet opens immediately: amount, optional caption, Post to Pulse toggle, then Send STK.
 3. After the demo PIN, a congratulations notice lands at the top. If Pulse was on, the lock is already on the feed.
 4. Open Lock to see deposits and remaining time. Use Vuna Transfer with a Safaricom number (`07XXXXXXXX` or `+2547XXXXXXXX`).
-5. On Pulse, salute a win or send a KES 50 Vuna Gift (needs at least KES 50.00 in protocol).
-6. On Profile, set your M-Pesa number, connect WhatsApp, and toggle the weekly wrap.
+5. On Pulse, salute a win or tap Vuna Gift — pick 10, 20 or 50. That STK hits VUNA paybill `400200`, not protocol. The gift lands live on their Pulse; they can reply and you get a notice.
+6. The bell (top right) keeps every notice. Tap a toast or the bell if you missed it.
+7. On Profile, set your M-Pesa number. Gift wallet is paybill credits, separate from lock.

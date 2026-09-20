@@ -1,6 +1,9 @@
 import { CongratsToast } from './components/CongratsToast'
+import { GiftSheet } from './components/GiftSheet'
 import { LockComposer } from './components/LockComposer'
 import { LogSheet } from './components/LogSheet'
+import { NoticeBell } from './components/NoticeBell'
+import { NoticeInbox } from './components/NoticeInbox'
 import { StkSheet } from './components/StkSheet'
 import { TransferSheet } from './components/TransferSheet'
 import { BottomNav } from './components/BottomNav'
@@ -18,7 +21,10 @@ function Shell() {
   return (
     <div className="min-h-svh bg-vuna-bg">
       <div className="mx-auto flex min-h-svh w-full max-w-[430px] flex-col bg-vuna-bg">
-        <main className="no-scrollbar flex-1 overflow-y-auto px-4 pb-28 pt-6">
+        <div className="flex items-center justify-end px-4 pt-3">
+          <NoticeBell />
+        </div>
+        <main className="no-scrollbar flex-1 overflow-y-auto px-4 pb-28 pt-2">
           {tab === 'harvest' ? <HarvestTab /> : null}
           {tab === 'lock' ? <LockTab /> : null}
           {tab === 'pulse' ? <PulseTab /> : null}
@@ -29,6 +35,8 @@ function Shell() {
         <StkSheet />
         <LogSheet />
         <LockComposer />
+        <GiftSheet />
+        <NoticeInbox />
         <CongratsToast />
         <TribeDrawer />
       </div>

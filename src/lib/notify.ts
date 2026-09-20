@@ -3,18 +3,17 @@
  *
  * Channels
  * - WhatsApp: primary. Friday 18:00 wrap, streak at risk, Vuna Gift receipts.
- * - In-app: Pulse feed + lock prompts. Works offline.
+ * - In-app: bell + toast + inbox. Works offline. This is what the phone shows now.
  * - Web push: optional later for desktop; poor reach on cheap Androids vs WhatsApp.
  *
- * Flow once Supabase is live
- * 1. Profile stores wrapEnabled, phone (M-Pesa / WhatsApp), timezone Africa/Nairobi.
- * 2. A Supabase Edge Function on a cron (Friday 15:00 UTC = 18:00 EAT) selects users
- *    with wrapEnabled and a verified number.
- * 3. The function posts a summary (vunas, KES locked, tribe) to WhatsApp Cloud API
- *    or Africa's Talking. Never from the browser.
- * 4. In-app copy is written to a `notifications` table and read on Pulse/Profile.
+ * Vuna Gift is not a protocol lock
+ * 1. Sender picks 10 / 20 / 50. Money never leaves protocol deposits.
+ * 2. Daraja STK Push (C2B) to VUNA paybill 400200, account = recipient handle.
+ * 3. Paybill webhook credits recipient.gift_wallet on their profile.
+ * 4. Realtime insert on Pulse (gift card: from, amount). Recipient can reply.
+ * 5. Reply writes an in-app + WhatsApp notice back to the sender.
  *
- * Do not send money or OTPs from the client. The browser only stores preference flags.
+ * Do not send money or OTPs from the client. The browser only mocks STK and stores flags.
  */
 
 export type NotifyChannel = 'whatsapp' | 'inapp' | 'push'
@@ -25,6 +24,9 @@ export type NotifyEvent =
   | { kind: 'tribe_salute'; handle: string }
   | { kind: 'mpesa_receipt'; kes: number }
   | { kind: 'stk_success'; activity: string; kes: number; posted: boolean }
+  | { kind: 'gift_sent'; handle: string; kes: number }
+  | { kind: 'gift_in'; handle: string; kes: number }
+  | { kind: 'gift_reply'; handle: string; text: string }
 
 export function describeNotify(event: NotifyEvent): string {
   if (event.kind === 'friday_wrap') return 'Weekly auditor wrap is due Friday 18:00.'
@@ -34,6 +36,15 @@ export function describeNotify(event: NotifyEvent): string {
     return event.posted
       ? `Congratulations. ${event.activity} is locked at KES ${event.kes.toFixed(2)} and on Pulse.`
       : `Congratulations. ${event.activity} is locked at KES ${event.kes.toFixed(2)}.`
+  }
+  if (event.kind === 'gift_sent') {
+    return `Paybill credited ${event.handle} with KES ${event.kes.toFixed(2)}. Live on their Pulse.`
+  }
+  if (event.kind === 'gift_in') {
+    return `${event.handle} sent you KES ${event.kes.toFixed(2)}. On your Pulse — reply from there.`
+  }
+  if (event.kind === 'gift_reply') {
+    return `${event.handle}: ${event.text}`
   }
   return `M-Pesa receipt for KES ${event.kes.toFixed(2)}.`
 }

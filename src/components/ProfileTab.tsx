@@ -22,6 +22,7 @@ export function ProfileTab() {
     avatarUrl,
     mpesaPhone,
     setMpesaPhone,
+    giftWallet,
   } = useVuna()
 
   return (
@@ -61,6 +62,16 @@ export function ProfileTab() {
           </div>
         </div>
       </label>
+
+      <section className="rounded-[22px] border border-[#3d4f00] bg-[#141a08] px-4 py-4">
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-vuna-lime">GIFT WALLET</p>
+        <p className="mt-2 font-amount text-[32px] leading-none text-white">
+          KES {giftWallet.toFixed(2)}
+        </p>
+        <p className="mt-2 text-[12px] leading-snug text-vuna-muted">
+          Paybill credits land here in real time. They never touch protocol lock.
+        </p>
+      </section>
 
       <label className="block rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3">
         <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">

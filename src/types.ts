@@ -16,8 +16,11 @@ export type ProtocolLine = {
   status: ProtocolStatus
 }
 
+export type FeedKind = 'vuna' | 'gift'
+
 export type FeedPost = {
   id: string
+  kind?: FeedKind
   handle: string
   tribe: string
   avatar: string
@@ -27,6 +30,12 @@ export type FeedPost = {
   salutes: number
   saluted: boolean
   visibility: Visibility
+  giftKes?: number
+  giftFrom?: string
+  giftFromAvatar?: string
+  giftTo?: string
+  giftReply?: string | null
+  giftReplyFrom?: string
 }
 
 export type StkState = {
@@ -63,10 +72,22 @@ export type Composer = {
   error: string | null
 }
 
+export type NoticeKind = 'stk' | 'gift_in' | 'gift_sent' | 'gift_reply'
+
 export type InAppNotice = {
   id: string
+  kind: NoticeKind
   title: string
   body: string
+  unread?: boolean
+}
+
+export type GiftDraft = {
+  open: boolean
+  postId: string | null
+  amount: 10 | 20 | 50
+  sending: boolean
+  error: string | null
 }
 
 export type TransferState = {

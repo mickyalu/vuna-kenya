@@ -21,6 +21,7 @@ import {
 import type {
   Composer,
   FeedPost,
+  GiftDraft,
   InAppNotice,
   LeaderRow,
   LogDraft,
@@ -30,6 +31,7 @@ import type {
   TransferState,
   Visibility,
 } from '../types'
+import { DEFAULT_GIFT_AMOUNT } from '../lib/paybill'
 
 const GOAL_TARGET_KES = 43750
 
@@ -63,6 +65,24 @@ function isSafaricom(phone: string) {
 }
 
 const INITIAL_FEED: FeedPost[] = [
+  {
+    id: 'g-mkuu',
+    kind: 'gift',
+    handle: '@MKUU_ABAN',
+    tribe: 'Karura Runners',
+    avatar: FACE_PHOTOS.Mkuu,
+    text: 'sent you a Vuna Gift',
+    streak: 2,
+    minutesAgo: 1,
+    salutes: 0,
+    saluted: false,
+    visibility: 'public',
+    giftKes: 20,
+    giftFrom: '@MKUU_ABAN',
+    giftFromAvatar: FACE_PHOTOS.Mkuu,
+    giftTo: 'you',
+    giftReply: null,
+  },
   {
     id: 'p1',
     handle: '@MKUU_ABAN',
@@ -108,6 +128,14 @@ const INITIAL_LEADERS: LeaderRow[] = [
   { handle: '@AWINO', tribe: 'Lifestyle', avatar: FACE_PHOTOS.Awino, kes: 4100, streak: 4 },
 ]
 
+const SEED_GIFT_NOTICE: InAppNotice = {
+  id: 'n-gift-mkuu',
+  kind: 'gift_in',
+  title: 'Vuna Gift',
+  body: describeNotify({ kind: 'gift_in', handle: '@MKUU_ABAN', kes: 20 }),
+  unread: true,
+}
+
 type VunaState = {
   tab: TabId
   setTab: (tab: TabId) => void
@@ -145,8 +173,18 @@ type VunaState = {
   pulseTab: 'feed' | 'leaderboard'
   setPulseTab: (tab: 'feed' | 'leaderboard') => void
   salute: (id: string) => void
-  gift: (id: string) => void
-  giftNotice: string | null
+  giftDraft: GiftDraft
+  openGift: (postId: string) => void
+  closeGift: () => void
+  setGiftAmount: (amount: 10 | 20 | 50) => void
+  sendGift: () => void
+  replyGift: (postId: string, message: string) => void
+  giftWallet: number
+  inbox: InAppNotice[]
+  inboxOpen: boolean
+  openInbox: () => void
+  closeInbox: () => void
+  unreadCount: number
   leaders: LeaderRow[]
   streak: number
   totalWins: number
@@ -222,7 +260,15 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [wrapEnabled, setWrapEnabledState] = useState(
     () => readStore('vuna-wrap') !== 'off',
   )
-  const [giftNotice, setGiftNotice] = useState<string | null>(null)
+  const [giftDraft, setGiftDraft] = useState<GiftDraft>({
+    open: false,
+    postId: null,
+    amount: DEFAULT_GIFT_AMOUNT,
+    sending: false,
+    error: null,
+  })
+  const [inbox, setInbox] = useState<InAppNotice[]>([SEED_GIFT_NOTICE])
+  const [inboxOpen, setInboxOpen] = useState(false)
   const [firstName, setFirstNameState] = useState(
     () => readStore('vuna-first-name') || 'Michael',
   )
@@ -275,15 +321,14 @@ export function VunaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!notice) return
-    const id = window.setTimeout(() => setNotice(null), 5200)
+    const id = window.setTimeout(() => setNotice(null), 8000)
     return () => window.clearTimeout(id)
   }, [notice])
 
   useEffect(() => {
-    if (!giftNotice) return
-    const id = window.setTimeout(() => setGiftNotice(null), 2600)
+    const id = window.setTimeout(() => setNotice(SEED_GIFT_NOTICE), 700)
     return () => window.clearTimeout(id)
-  }, [giftNotice])
+  }, [])
 
   const commitmentTotal = useMemo(
     () =>
@@ -363,8 +408,9 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       )
       setStk({ open: false, lineId: null, status: 'idle', error: null })
       setLockPrompt('Locked. When you finish, tap I did it — or say nothing. Logging is optional.')
-      setNotice({
+      const stkNotice: InAppNotice = {
         id: uid(),
+        kind: 'stk',
         title: 'Congratulations',
         body: describeNotify({
           kind: 'stk_success',
@@ -372,7 +418,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           kes,
           posted: false,
         }),
-      })
+        unread: true,
+      }
+      setInbox((prev) => [stkNotice, ...prev])
+      setNotice(stkNotice)
       setLiveOpen(false)
     }, 1100)
   }, [lines, stk.lineId])
@@ -439,6 +488,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     writeStore('vuna-mpesa', phone)
   }, [])
 
+  const pushNotice = useCallback((item: InAppNotice) => {
+    setInbox((prev) => [item, ...prev.filter((n) => n.id !== item.id)])
+    setNotice(item)
+  }, [])
+
   const salute = useCallback((id: string) => {
     setFeed((prev) =>
       prev.map((post) => {
@@ -451,18 +505,132 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
-  const gift = useCallback(
-    (id: string) => {
-      const post = feed.find((p) => p.id === id)
-      if (!post) return
-      if (deposits < 50) {
-        setGiftNotice('Need at least KES 50.00 in protocol to send a Vuna Gift.')
-        return
-      }
-      setDeposits((v) => v - 50)
-      setGiftNotice(`Sent KES 50.00 Vuna Gift to ${post.handle} via M-Pesa.`)
+  const openGift = useCallback((postId: string) => {
+    setGiftDraft({
+      open: true,
+      postId,
+      amount: DEFAULT_GIFT_AMOUNT,
+      sending: false,
+      error: null,
+    })
+  }, [])
+
+  const closeGift = useCallback(() => {
+    setGiftDraft((g) => (g.sending ? g : { ...g, open: false, postId: null, error: null }))
+  }, [])
+
+  const setGiftAmount = useCallback((amount: 10 | 20 | 50) => {
+    setGiftDraft((g) => (g.sending ? g : { ...g, amount, error: null }))
+  }, [])
+
+  const sendGift = useCallback(() => {
+    if (giftDraft.sending || !giftDraft.postId) return
+    const post = feed.find((p) => p.id === giftDraft.postId)
+    if (!post) return
+    if (!isSafaricom(mpesaPhone)) {
+      setGiftDraft((g) => ({ ...g, error: 'Add your Safaricom number so the STK can land.' }))
+      return
+    }
+    const kes = giftDraft.amount
+    const toHandle = post.handle
+    setGiftDraft((g) => ({ ...g, sending: true, error: null }))
+    window.setTimeout(() => {
+      const giftId = uid()
+      setFeed((prev) => [
+        {
+          id: giftId,
+          kind: 'gift',
+          handle: `@${cardName}`,
+          tribe: post.tribe,
+          avatar: avatarUrl,
+          text: `sent ${toHandle} a Vuna Gift`,
+          streak,
+          minutesAgo: 0,
+          salutes: 0,
+          saluted: false,
+          visibility: 'public',
+          giftKes: kes,
+          giftFrom: `@${cardName}`,
+          giftFromAvatar: avatarUrl,
+          giftTo: toHandle,
+          giftReply: null,
+        },
+        ...prev,
+      ])
+      setGiftDraft({
+        open: false,
+        postId: null,
+        amount: DEFAULT_GIFT_AMOUNT,
+        sending: false,
+        error: null,
+      })
+      setTab('pulse')
+      setPulseTab('feed')
+      pushNotice({
+        id: uid(),
+        kind: 'gift_sent',
+        title: 'Gift is live',
+        body: describeNotify({ kind: 'gift_sent', handle: toHandle, kes }),
+      })
+      window.setTimeout(() => {
+        const reply = 'Asante. See you on the trail.'
+        setFeed((prev) =>
+          prev.map((item) =>
+            item.id === giftId
+              ? { ...item, giftReply: reply, giftReplyFrom: toHandle }
+              : item,
+          ),
+        )
+        pushNotice({
+          id: uid(),
+          kind: 'gift_reply',
+          title: `${toHandle} replied`,
+          body: describeNotify({ kind: 'gift_reply', handle: toHandle, text: reply }),
+        })
+      }, 1800)
+    }, 1100)
+  }, [giftDraft, feed, mpesaPhone, cardName, avatarUrl, streak, pushNotice])
+
+  const replyGift = useCallback(
+    (postId: string, message: string) => {
+      const note = message.trim()
+      if (!note) return
+      const post = feed.find((p) => p.id === postId)
+      if (!post || post.kind !== 'gift' || post.giftReply) return
+      setFeed((prev) =>
+        prev.map((item) =>
+          item.id === postId
+            ? { ...item, giftReply: note, giftReplyFrom: `@${cardName}` }
+            : item,
+        ),
+      )
+      pushNotice({
+        id: uid(),
+        kind: 'gift_reply',
+        title: 'Reply sent',
+        body: `${post.giftFrom} will see: ${note}`,
+      })
     },
-    [deposits, feed],
+    [feed, cardName, pushNotice],
+  )
+
+  const openInbox = useCallback(() => {
+    setInboxOpen(true)
+    setInbox((prev) => prev.map((n) => ({ ...n, unread: false })))
+    setNotice(null)
+  }, [])
+
+  const closeInbox = useCallback(() => {
+    setInboxOpen(false)
+  }, [])
+
+  const unreadCount = useMemo(() => inbox.filter((n) => n.unread).length, [inbox])
+  const giftWallet = useMemo(
+    () =>
+      feed
+        .filter((p) => p.kind === 'gift' && (p.giftTo === 'you' || p.giftTo === `@${cardName}`))
+        .reduce((sum, p) => sum + (p.giftKes ?? 0), 0),
+    [feed, cardName],
   )
 
   const connectWhatsApp = useCallback(() => {
@@ -613,11 +781,15 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         ])
       }
       setComposer(emptyComposer())
-      setNotice({
+      const stkNotice: InAppNotice = {
         id: uid(),
+        kind: 'stk',
         title: 'Congratulations',
         body: describeNotify({ kind: 'stk_success', activity, kes, posted: postToPulse }),
-      })
+        unread: true,
+      }
+      setInbox((prev) => [stkNotice, ...prev])
+      setNotice(stkNotice)
     }, 1100)
   }, [composer, mpesaPhone, cardName, avatarUrl, streak])
 
@@ -714,8 +886,18 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     pulseTab,
     setPulseTab,
     salute,
-    gift,
-    giftNotice,
+    giftDraft,
+    openGift,
+    closeGift,
+    setGiftAmount,
+    sendGift,
+    replyGift,
+    giftWallet,
+    inbox,
+    inboxOpen,
+    openInbox,
+    closeInbox,
+    unreadCount,
     leaders,
     streak,
     totalWins,
