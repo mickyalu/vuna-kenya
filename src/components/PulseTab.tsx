@@ -1,5 +1,4 @@
 import { Gift, Heart } from 'lucide-react'
-import { KesAmount } from './KesAmount'
 import { TRIBES } from '../lib/tribes'
 import { useVuna } from '../store/VunaContext'
 import { TribeChip } from './TribeChip'
@@ -157,7 +156,9 @@ export function PulseTab() {
             FITNESS TRIBE STANDINGS
           </h2>
           <div className="space-y-2">
-            {leaders.map((row, index) => (
+            {[...leaders]
+              .sort((a, b) => b.streak - a.streak)
+              .map((row, index) => (
               <article
                 key={row.handle}
                 className="flex items-center gap-3 rounded-2xl border border-vuna-border bg-vuna-card px-3 py-3"
@@ -170,9 +171,14 @@ export function PulseTab() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold text-white">{row.handle}</p>
-                  <p className="text-[12px] text-vuna-muted">{row.tribe} · {row.streak} day streak</p>
+                  <p className="text-[12px] text-vuna-muted">{row.tribe}</p>
                 </div>
-                <KesAmount value={row.kes} digits={0} tone="lime" className="text-[14px]" />
+                <div className="text-right">
+                  <p className="font-amount text-[20px] leading-none text-vuna-lime">{row.streak}</p>
+                  <p className="mt-1 text-[9px] font-semibold tracking-[0.14em] text-vuna-dim">
+                    VUNAS
+                  </p>
+                </div>
               </article>
             ))}
           </div>
