@@ -1,13 +1,13 @@
-export function formatKes(
-  value: number,
-  fractionDigits = 2,
-): string {
+export function formatKesDigits(value: number, fractionDigits = 2): string {
   const abs = Math.abs(value)
-  const formatted = abs.toLocaleString('en-KE', {
+  return abs.toLocaleString('en-KE', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   })
-  return `${value < 0 ? '-' : ''}KES ${formatted}`
+}
+
+export function formatKes(value: number, fractionDigits = 2): string {
+  return `${value < 0 ? '-' : ''}KES ${formatKesDigits(value, fractionDigits)}`
 }
 
 export function parseKesInput(raw: string): number {

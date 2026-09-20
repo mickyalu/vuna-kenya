@@ -1,7 +1,9 @@
+import type { PillarId } from './lib/pillars'
+
 export type TabId = 'harvest' | 'lock' | 'pulse' | 'profile'
 
-export const PILLARS = ['FITNESS', 'HEALTH', 'HABITS', 'LIFESTYLE'] as const
-export type PillarId = (typeof PILLARS)[number]
+export type { PillarId }
+export { DEFAULT_PINNED, PILLARS } from './lib/pillars'
 
 export type ProtocolLine = {
   id: string

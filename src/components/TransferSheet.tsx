@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { formatKes } from '../lib/money'
+import { KesAmount } from './KesAmount'
 import { useVuna } from '../store/VunaContext'
 
 export function TransferSheet() {
@@ -28,7 +28,8 @@ export function TransferSheet() {
         </div>
 
         <p className="mb-4 text-[13px] text-vuna-muted">
-          Available to send: <span className="text-white">{formatKes(deposits)}</span>
+          Available to send:{' '}
+          <KesAmount value={deposits} className="text-[13px]" />
         </p>
 
         <label className="mb-3 block">
@@ -53,7 +54,7 @@ export function TransferSheet() {
             onChange={(e) => updateTransfer({ amount: e.target.value, error: null, success: null })}
             placeholder="0.00"
             inputMode="decimal"
-            className="w-full rounded-xl border border-vuna-border bg-vuna-raised px-3 py-3 text-[15px] text-white outline-none placeholder:text-vuna-dim"
+            className="font-amount w-full rounded-xl border border-vuna-border bg-vuna-raised px-3 py-3 text-[18px] text-white outline-none placeholder:text-vuna-dim"
           />
         </label>
 

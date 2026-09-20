@@ -1,5 +1,5 @@
 import { Gift, Heart } from 'lucide-react'
-import { formatKes } from '../lib/money'
+import { KesAmount } from './KesAmount'
 import { useVuna } from '../store/VunaContext'
 
 function timeLabel(minutesAgo: number) {
@@ -27,9 +27,7 @@ export function PulseTab() {
         <p className="text-[11px] font-semibold tracking-[0.18em] text-vuna-muted">
           SOCIAL TRIBES
         </p>
-        <h1 className="mt-1 text-[34px] font-bold leading-none tracking-tight text-white">
-          PULSE
-        </h1>
+        <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PULSE</h1>
       </header>
 
       <div className="flex rounded-full bg-vuna-raised p-1">
@@ -161,7 +159,7 @@ export function PulseTab() {
                   <p className="truncate text-[14px] font-semibold text-white">{row.handle}</p>
                   <p className="text-[12px] text-vuna-muted">{row.tribe} · {row.streak} day streak</p>
                 </div>
-                <p className="text-[13px] font-semibold text-vuna-lime">{formatKes(row.kes, 0)}</p>
+                <KesAmount value={row.kes} digits={0} tone="lime" className="text-[14px]" />
               </article>
             ))}
           </div>

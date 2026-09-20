@@ -8,10 +8,16 @@ import {
   type ReactNode,
 } from 'react'
 import { parseKesInput } from '../lib/money'
+import {
+  DEFAULT_PINNED,
+  emptyPillarTotals,
+  PILLARS,
+  titleCasePillar,
+  type PillarId,
+} from '../lib/pillars'
 import type {
   FeedPost,
   LeaderRow,
-  PillarId,
   ProtocolLine,
   TabId,
   TransferState,
@@ -83,6 +89,8 @@ type VunaState = {
   goalTarget: number
   progressPct: number
   pillars: Record<PillarId, number>
+  pinnedPillars: PillarId[]
+  promotePillar: (id: PillarId, slot: number) => void
   lines: ProtocolLine[]
   protocolError: string | null
   updateLine: (id: string, patch: Partial<ProtocolLine>) => void
@@ -122,11 +130,17 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [lockMonths] = useState(12)
   const [daysRemaining] = useState(280)
   const [goalName] = useState('General Wealth')
-  const [pillars, setPillars] = useState<Record<PillarId, number>>({
-    FITNESS: 0,
-    HEALTH: 0,
-    HABITS: 0,
-    LIFESTYLE: 0,
+  const [pillars, setPillars] = useState<Record<PillarId, number>>(emptyPillarTotals)
+  const [pinnedPillars, setPinnedPillars] = useState<PillarId[]>(() => {
+    try {
+      const raw = localStorage.getItem('vuna-pinned-pillars')
+      if (!raw) return [...DEFAULT_PINNED]
+      const parsed = JSON.parse(raw) as PillarId[]
+      const valid = parsed.filter((id) => PILLARS.includes(id))
+      return valid.length === 4 ? valid : [...DEFAULT_PINNED]
+    } catch {
+      return [...DEFAULT_PINNED]
+    }
   })
   const [lines, setLines] = useState<ProtocolLine[]>([emptyLine()])
   const [protocolError, setProtocolError] = useState<string | null>(null)
@@ -210,9 +224,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       {
         id: uid(),
         handle: '@YOU',
-        tribe: first.pillar
-          ? `${first.pillar.charAt(0)}${first.pillar.slice(1).toLowerCase()} Tribe`
-          : 'Vuna',
+        tribe: first.pillar ? `${titleCasePillar(first.pillar)} Tribe` : 'Vuna',
         avatar: '🌾',
         text: first.description.trim() || `Locked ${added.toFixed(2)} KES into protocol.`,
         streak: streak + 1,
@@ -281,6 +293,20 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setTransfer((t) => ({ ...t, ...patch, error: patch.error ?? null }))
   }, [])
 
+  const promotePillar = useCallback((id: PillarId, slot: number) => {
+    setPinnedPillars((prev) => {
+      if (prev[slot] === id) return prev
+      const next = [...prev]
+      const existing = next.indexOf(id)
+      if (existing >= 0) {
+        next[existing] = prev[slot]
+      }
+      next[slot] = id
+      localStorage.setItem('vuna-pinned-pillars', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
   const sendTransfer = useCallback(() => {
     const amount = parseKesInput(transfer.amount)
     const phone = transfer.phone.replace(/\s/g, '')
@@ -327,6 +353,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     goalTarget: GOAL_TARGET_KES,
     progressPct,
     pillars,
+    pinnedPillars,
+    promotePillar,
     lines,
     protocolError,
     updateLine,

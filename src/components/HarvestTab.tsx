@@ -1,17 +1,9 @@
 import { ChevronDown, Plus, Send } from 'lucide-react'
-import { formatKes } from '../lib/money'
+import { useState } from 'react'
+import { KesAmount } from './KesAmount'
+import { PILLAR_CATALOG, PILLARS, type PillarId } from '../lib/pillars'
 import { useVuna } from '../store/VunaContext'
-import { PILLARS, type PillarId } from '../types'
-
-const PILLAR_META: Record<
-  PillarId,
-  { emoji: string; label: string }
-> = {
-  FITNESS: { emoji: '🏃', label: 'FITNESS' },
-  HEALTH: { emoji: '❤️', label: 'HEALTH' },
-  HABITS: { emoji: '✓', label: 'HABITS' },
-  LIFESTYLE: { emoji: '🌿', label: 'LIFESTYLE' },
-}
+import { PillarDrawer } from './PillarDrawer'
 
 export function HarvestTab() {
   const {
@@ -27,20 +19,28 @@ export function HarvestTab() {
     commitmentTotal,
     protocolError,
     pillars,
+    pinnedPillars,
+    promotePillar,
   } = useVuna()
+  const [swapSlot, setSwapSlot] = useState(0)
+
+  const dropdownPillars = [
+    ...pinnedPillars,
+    ...PILLARS.filter((id) => !pinnedPillars.includes(id)),
+  ]
 
   return (
     <div className="space-y-5 pb-4">
-      <section className="rounded-2xl border border-[#2a3a00] bg-vuna-card px-5 pb-5 pt-6">
-        <p className="text-center text-[11px] font-semibold tracking-[0.18em] text-vuna-muted">
+      <section className="rounded-[22px] border border-[#2f3f00] bg-vuna-card px-5 pb-5 pt-6">
+        <p className="text-center text-[11px] font-semibold tracking-[0.22em] text-vuna-muted">
           VUNA PROTOCOL BALANCE
         </p>
-        <p className="mt-3 text-center text-[44px] font-semibold leading-none tracking-tight text-white">
-          {formatKes(deposits)}
+        <p className="mt-2 text-center leading-none">
+          <KesAmount value={deposits} className="text-[48px] leading-none" />
         </p>
-        <p className="mt-4 text-center text-[12px] tracking-[0.08em] text-vuna-muted">
+        <p className="mt-4 text-center text-[12px] tracking-[0.12em] text-vuna-muted">
           FOR:{' '}
-          <span className="font-semibold tracking-[0.14em] text-white">
+          <span className="font-semibold tracking-[0.16em] text-white">
             {goalName.toUpperCase()}
           </span>
         </p>
@@ -52,14 +52,21 @@ export function HarvestTab() {
             />
           </div>
           <p className="shrink-0 text-[12px] font-medium text-vuna-mint">
-            +{formatKes(tickingYield, 4)} Yield Ticking
+            +
+            <KesAmount
+              value={tickingYield}
+              digits={4}
+              tone="mint"
+              className="text-[12px] font-medium"
+            />{' '}
+            Yield Ticking
           </p>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-vuna-border bg-vuna-card p-4">
+      <section className="rounded-[22px] border border-vuna-border bg-vuna-card p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[13px] font-bold tracking-[0.08em] text-white">
+          <h2 className="text-[13px] font-extrabold tracking-[0.08em] text-white">
             QUICK PROTOCOL ENTRY
           </h2>
           <button
@@ -96,7 +103,7 @@ export function HarvestTab() {
                     className="w-full appearance-none bg-transparent py-0.5 pr-6 text-[11px] font-semibold tracking-[0.12em] text-vuna-muted outline-none"
                   >
                     <option value="">SELECT PILLAR...</option>
-                    {PILLARS.map((p) => (
+                    {dropdownPillars.map((p) => (
                       <option key={p} value={p}>
                         {p}
                       </option>
@@ -108,14 +115,14 @@ export function HarvestTab() {
                   />
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1 text-vuna-muted">
-                <span className="text-[13px]">KES</span>
+              <div className="flex shrink-0 items-baseline gap-1 text-vuna-muted">
+                <span className="font-amount text-[13px]">KES</span>
                 <input
                   inputMode="decimal"
                   value={line.amount}
                   onChange={(e) => updateLine(line.id, { amount: e.target.value })}
                   placeholder="0"
-                  className="w-10 bg-transparent text-right text-[16px] font-medium text-white outline-none placeholder:text-vuna-dim"
+                  className="font-amount w-12 bg-transparent text-right text-[18px] text-white outline-none placeholder:text-vuna-dim"
                 />
               </div>
             </div>
@@ -138,8 +145,8 @@ export function HarvestTab() {
         <div className="mt-4 flex items-end justify-between border-t border-vuna-border pt-4">
           <div>
             <p className="text-[12px] text-vuna-muted">Total Commitment</p>
-            <p className="mt-1 text-[28px] font-semibold leading-none text-vuna-lime">
-              {formatKes(commitmentTotal)}
+            <p className="mt-1 leading-none">
+              <KesAmount value={commitmentTotal} tone="lime" className="text-[32px] leading-none" />
             </p>
           </div>
           <button
@@ -154,35 +161,51 @@ export function HarvestTab() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-[15px] font-bold tracking-[0.12em] text-white">
+        <h2 className="mb-1 text-[15px] font-extrabold tracking-[0.14em] text-white">
           ATOMIC HABIT PILLARS
         </h2>
+        <p className="mb-3 text-[12px] text-vuna-muted">
+          Four mains on the board. Open the drawer to swap in Relationship, Finances, and more.
+        </p>
         <div className="grid grid-cols-2 gap-3">
-          {PILLARS.map((id) => {
-            const meta = PILLAR_META[id]
+          {pinnedPillars.map((id, slot) => {
+            const meta = PILLAR_CATALOG[id]
+            const selected = swapSlot === slot
             return (
-              <article
-                key={id}
-                className="rounded-2xl border border-vuna-border bg-vuna-card px-3 pb-4 pt-5 text-center"
+              <button
+                key={`${id}-${slot}`}
+                type="button"
+                onClick={() => setSwapSlot(slot)}
+                className={`rounded-[22px] border px-3 pb-4 pt-5 text-center transition ${
+                  selected
+                    ? 'border-vuna-lime bg-vuna-card'
+                    : 'border-vuna-border bg-vuna-card'
+                }`}
               >
-                <p className="text-[20px] font-semibold text-vuna-lime">
-                  {formatKes(pillars[id])}
-                </p>
+                <KesAmount
+                  value={pillars[id]}
+                  tone="lime"
+                  className="text-[22px] leading-none"
+                />
                 <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-vuna-dim">
                   {meta.label}
                 </p>
                 <p className="mt-3 text-[28px] leading-none">{meta.emoji}</p>
-                <p className="mt-3 text-[16px] font-bold tracking-wide text-white">
+                <p className="mt-3 text-[15px] font-extrabold tracking-wide text-white">
                   {meta.label}
                 </p>
                 <p className="mt-1 text-[10px] font-semibold tracking-[0.16em] text-vuna-dim">
                   TOTAL ACCUMULATED
                 </p>
                 <div className="mx-auto mt-3 h-px w-16 bg-vuna-border" />
-              </article>
+              </button>
             )
           })}
         </div>
+        <PillarDrawer
+          swapSlot={swapSlot}
+          onPick={(id) => promotePillar(id, swapSlot)}
+        />
       </section>
     </div>
   )

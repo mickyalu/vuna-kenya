@@ -1,5 +1,5 @@
 import { ChevronRight, Send } from 'lucide-react'
-import { formatKes } from '../lib/money'
+import { KesAmount } from './KesAmount'
 import { useVuna } from '../store/VunaContext'
 
 export function LockTab() {
@@ -18,7 +18,7 @@ export function LockTab() {
     <div className="space-y-5 pb-4">
       <section className="pt-2 text-center">
         <CommitmentArc value={72} />
-        <p className="mt-3 text-[13px] font-bold tracking-[0.14em] text-vuna-lime">
+        <p className="font-display mt-1 text-[22px] text-vuna-lime">
           BEHAVIORAL COMMITMENT INDEX
         </p>
         <p className="mt-1 text-[12px] text-vuna-muted">
@@ -27,10 +27,10 @@ export function LockTab() {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-4">
+      <section className="rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-[18px] font-semibold text-white">{goalName}</h2>
-          <span className="rounded-full bg-[#1f2a00] px-2.5 py-1 text-[11px] font-semibold text-vuna-lime">
+          <span className="rounded-full bg-[#1f2a00] px-2.5 py-1 font-amount text-[11px] text-vuna-lime">
             {progressPct.toFixed(1)}%
           </span>
         </div>
@@ -46,21 +46,21 @@ export function LockTab() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-5">
+      <section className="rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-5">
         <p className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
           ESTIMATED HARVEST
         </p>
-        <p className="mt-3 text-[36px] font-semibold leading-none text-vuna-mint">
-          {formatKes(estimatedHarvest)}
+        <p className="mt-2 leading-none">
+          <KesAmount value={estimatedHarvest} tone="mint" className="text-[40px] leading-none" />
         </p>
         <div className="mt-5 space-y-2 text-[14px]">
           <div className="flex items-center justify-between">
             <span className="text-vuna-muted">Deposits</span>
-            <span className="text-white">{formatKes(deposits)}</span>
+            <KesAmount value={deposits} className="text-[15px]" />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-vuna-muted">Yield earned</span>
-            <span className="text-vuna-mint">{formatKes(yieldEarned)}</span>
+            <KesAmount value={yieldEarned} tone="mint" className="text-[15px]" />
           </div>
         </div>
       </section>
@@ -72,7 +72,7 @@ export function LockTab() {
         <button
           type="button"
           onClick={openTransfer}
-          className="flex w-full items-center gap-3 rounded-2xl border border-vuna-border bg-vuna-card px-3 py-3 text-left"
+          className="flex w-full items-center gap-3 rounded-[22px] border border-vuna-border bg-vuna-card px-3 py-3 text-left"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-vuna-lime text-black">
             <Send size={18} className="-translate-x-0.5 translate-y-0.5" />
@@ -107,6 +107,15 @@ function CommitmentArc({ value }: { value: number }) {
 
   return (
     <svg viewBox="0 0 200 118" className="mx-auto h-[132px] w-[240px]">
+      <defs>
+        <filter id="bci-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       <path
         d={arc(start, end)}
         fill="none"
@@ -121,6 +130,7 @@ function CommitmentArc({ value }: { value: number }) {
         strokeWidth="10"
         strokeLinecap="round"
         strokeDasharray={`${dash} ${length}`}
+        filter="url(#bci-glow)"
       />
     </svg>
   )

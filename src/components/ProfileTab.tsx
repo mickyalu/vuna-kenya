@@ -18,22 +18,20 @@ export function ProfileTab() {
         <p className="text-[11px] font-semibold tracking-[0.18em] text-vuna-muted">
           THE REPUTATION
         </p>
-        <h1 className="mt-1 text-[34px] font-bold leading-none tracking-tight text-white">
-          PROFILE
-        </h1>
+        <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PROFILE</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-3">
         <article className="rounded-2xl border border-vuna-border bg-vuna-card px-3 py-6 text-center">
           <Calendar className="mx-auto text-vuna-muted" size={28} strokeWidth={1.5} />
-          <p className="mt-4 text-[36px] font-semibold leading-none text-white">{streak}</p>
+          <p className="font-amount mt-4 text-[40px] leading-none text-white">{streak}</p>
           <p className="mt-3 text-[11px] font-semibold tracking-[0.14em] text-vuna-dim">
             VERIFIED STREAK
           </p>
         </article>
         <article className="rounded-2xl border border-vuna-border bg-vuna-card px-3 py-6 text-center">
           <CircleCheck className="mx-auto text-vuna-mint" size={28} strokeWidth={1.75} />
-          <p className="mt-4 text-[36px] font-semibold leading-none text-white">{totalWins}</p>
+          <p className="font-amount mt-4 text-[40px] leading-none text-white">{totalWins}</p>
           <p className="mt-3 text-[11px] font-semibold tracking-[0.14em] text-vuna-dim">
             TOTAL WINS
           </p>
