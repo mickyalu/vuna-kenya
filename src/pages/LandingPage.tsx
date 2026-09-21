@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Check, Smartphone, X } from 'lucide-react'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
 import {
@@ -32,10 +32,22 @@ const LEGAL: Record<LegalKey, { title: string; body: string[] }> = {
 }
 
 const TRUST = [
-  { kicker: '01', title: 'CMA Regulatory Sandbox Framework', line: 'Built for Capital Markets Authority sandbox review. Not a licensed CIS.' },
-  { kicker: '02', title: 'M-Pesa Daraja API Native', line: 'Whole-shilling STK Push. Balance moves only after ResultCode 0.' },
-  { kicker: '03', title: 'Licensed CIS Custody Engine (Etica MMF)', line: 'Where cash sits in a money market fund, custody is with a licensed manager.' },
-  { kicker: '04', title: 'Kenya Data Protection Act Compliant', line: 'Masked MSISDNs. No PINs on device. Server-only Daraja secrets.' },
+  {
+    title: 'Regulated Fund Custody',
+    line: 'Cash is invested directly into licensed Money Market Funds.',
+  },
+  {
+    title: 'Instant M-Pesa Integration',
+    line: 'Direct STK pushes to your phone with zero hidden fees.',
+  },
+  {
+    title: 'Daily Interest Yields',
+    line: 'Watch your micro-investments grow with daily compounding returns.',
+  },
+  {
+    title: 'Bank-Grade Security',
+    line: 'Encrypted transactions and total control over your funds anytime.',
+  },
 ]
 
 const LEGACY = [
@@ -46,10 +58,10 @@ const LEGACY = [
 ]
 
 const VUNA_DIFF = [
-  'Action-Triggered STK Push',
-  'Atomic Habit Triggers',
-  'Friday 18:00 Wrap WhatsApp Auditor',
-  'Verified Community Streaks',
+  'Instant M-Pesa the moment you log a habit',
+  'Atomic habit triggers on Fitness, Health, Habits, Lifestyle',
+  'Friday 18:00 WhatsApp wrap to keep the weekend honest',
+  'Verified community streaks with your tribe',
 ]
 
 export function LandingPage() {
@@ -88,14 +100,15 @@ export function LandingPage() {
         <section className="mx-auto grid max-w-[1120px] items-center gap-12 px-5 py-12 lg:grid-cols-2 lg:py-20">
           <div>
             <p className="text-[12px] font-semibold tracking-[0.2em] text-[#CCFF00]">
-              KENYA · KES · M-PESA DARAJA
+              KENYA · KES · M-PESA
             </p>
             <h1 className="font-display mt-3 text-[48px] leading-[0.9] sm:text-[64px] lg:text-[76px]">
               WEALTH IS A BEHAVIOR, NOT A LUCK DRAW.
             </h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-[#888888]">
-              Automate micro-investments into regulated Money Market Funds every time you log a daily
-              habit. Powered by M-Pesa Daraja &amp; Licensed CIS Fund Managers in Kenya.
+              Turn your everyday wins into high-yield wealth. VUNA automatically invests small
+              micro-deposits into Money Market Funds every time you log a healthy habit—earning daily
+              interest straight from M-Pesa.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
@@ -105,12 +118,12 @@ export function LandingPage() {
               >
                 Launch Web App ➔
               </button>
-                <button
+              <button
                 type="button"
                 onClick={() => (installed ? goApp() : void install())}
                 className="rounded-full border border-[#222222] bg-[#121212] px-6 py-3.5 text-[15px] font-semibold text-white"
               >
-                {installed ? 'Installed — Open App' : 'Install App (PWA)'}
+                {installed ? 'Open installed app' : 'Install PWA'}
               </button>
             </div>
             {hint ? (
@@ -118,26 +131,29 @@ export function LandingPage() {
                 {hint}
               </p>
             ) : null}
-            {installed ? (
-              <p className="mt-3 text-[13px] text-[#888888]">This browser already has VUNA on the home screen.</p>
-            ) : null}
-            <div className="mt-6 flex flex-wrap gap-2">
-              <StorePill label="Google Play" />
-              <StorePill label="App Store" />
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <AppStoreBadge onClick={() => goApp()} />
+              <GooglePlayBadge onClick={() => goApp()} />
             </div>
           </div>
-          <HarvestPreview />
+          <PhoneFrame>
+            <HarvestPreview />
+          </PhoneFrame>
         </section>
 
         <section className="border-y border-[#222222] bg-[#121212]">
-          <div className="mx-auto grid max-w-[1120px] gap-3 px-5 py-8 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST.map((item) => (
-              <article key={item.kicker} className="rounded-[22px] border border-[#222222] bg-[#1A1A1A] px-4 py-4">
-                <p className="text-[11px] font-semibold tracking-[0.16em] text-[#CCFF00]">{item.kicker}</p>
-                <h2 className="mt-2 text-[15px] font-semibold leading-snug text-white">{item.title}</h2>
-                <p className="mt-2 text-[12px] leading-relaxed text-[#888888]">{item.line}</p>
-              </article>
-            ))}
+          <div className="mx-auto max-w-[1120px] px-5 py-10">
+            <p className="text-center text-[12px] font-semibold tracking-[0.18em] text-[#CCFF00]">
+              BUILT FOR SECURITY &amp; SPEED
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {TRUST.map((item) => (
+                <article key={item.title} className="rounded-[22px] border border-[#222222] bg-[#1A1A1A] px-4 py-5">
+                  <h2 className="text-[16px] font-semibold leading-snug text-white">{item.title}</h2>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[#888888]">{item.line}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -146,13 +162,12 @@ export function LandingPage() {
             WHY VUNA REPLACES TRADITIONAL SAVINGS APPS
           </h2>
           <p className="mt-3 max-w-2xl text-[15px] text-[#888888]">
-            Chumz-style micro-savings wait for you to remember. VUNA fires an STK the moment a habit
-            is logged, then audits the week on WhatsApp before Friday night.
+            Traditional savings apps wait for you to remember to save. VUNA triggers instant M-Pesa
+            deposits the moment you complete a daily habit.
           </p>
           <div className="mt-8 grid gap-3 md:grid-cols-2">
             <article className="rounded-[22px] border border-[#222222] bg-[#121212] p-5">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-[#555555]">COLUMN A</p>
-              <h3 className="mt-2 text-[18px] font-semibold text-[#888888]">Legacy micro-savings</h3>
+              <h3 className="text-[18px] font-semibold text-[#888888]">Traditional Savings Apps</h3>
               <ul className="mt-4 space-y-3">
                 {LEGACY.map((line) => (
                   <li key={line} className="border-t border-[#222222] pt-3 text-[14px] text-[#888888]">
@@ -162,8 +177,7 @@ export function LandingPage() {
               </ul>
             </article>
             <article className="rounded-[22px] border border-[#CCFF00] bg-[#121212] p-5">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-[#CCFF00]">COLUMN B</p>
-              <h3 className="mt-2 text-[18px] font-semibold text-white">VUNA Behavioral Wealth</h3>
+              <h3 className="text-[18px] font-semibold text-white">VUNA Behavioral Wealth</h3>
               <ul className="mt-4 space-y-3">
                 {VUNA_DIFF.map((line) => (
                   <li key={line} className="border-t border-[#222222] pt-3 text-[14px] font-medium text-white">
@@ -337,11 +351,108 @@ export function LandingPage() {
   )
 }
 
-function StorePill({ label }: { label: string }) {
+function PhoneFrame({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-[#222222] bg-[#1A1A1A] px-3 py-1.5 text-[11px] font-semibold tracking-[0.08em] text-[#888888]">
-      Coming Soon to {label}
+    <div className="mx-auto w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[338px]">
+      <div className="relative">
+        <span className="absolute -left-[3px] top-[110px] h-8 w-[3px] rounded-l-sm bg-[#3a3a3a]" />
+        <span className="absolute -left-[3px] top-[152px] h-14 w-[3px] rounded-l-sm bg-[#3a3a3a]" />
+        <span className="absolute -left-[3px] top-[214px] h-14 w-[3px] rounded-l-sm bg-[#3a3a3a]" />
+        <span className="absolute -right-[3px] top-[168px] h-20 w-[3px] rounded-r-sm bg-[#3a3a3a]" />
+        <div className="relative overflow-hidden rounded-[46px] border-[3px] border-[#2c2c2c] bg-[#0d0d0d] p-[10px] shadow-[0_28px_70px_rgba(0,0,0,0.55)]">
+          <div
+            className="pointer-events-none absolute inset-0 z-20 rounded-[42px]"
+            style={{
+              background:
+                'linear-gradient(118deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 28%, rgba(255,255,255,0) 48%)',
+            }}
+          />
+          <div className="relative overflow-hidden rounded-[36px] bg-[#0A0A0A]">
+            <div className="absolute left-1/2 top-[7px] z-30 h-[22px] w-[92px] -translate-x-1/2 rounded-full bg-black" />
+            <div className="relative z-10 flex items-center justify-between px-6 pb-0.5 pt-[11px] text-[11px] font-semibold text-white">
+              <span>9:41</span>
+              <span className="w-[92px]" aria-hidden />
+              <StatusCluster />
+            </div>
+            <div className="px-3 pb-2 pt-1">{children}</div>
+            <div className="mx-auto mb-2 h-[5px] w-[108px] rounded-full bg-white/35" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatusCluster() {
+  return (
+    <span className="flex items-center gap-1" aria-hidden>
+      <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor">
+        <rect x="0" y="6" width="2.2" height="4" rx="0.4" />
+        <rect x="3.4" y="4" width="2.2" height="6" rx="0.4" />
+        <rect x="6.8" y="2" width="2.2" height="8" rx="0.4" />
+        <rect x="10.2" y="0" width="2.2" height="10" rx="0.4" />
+      </svg>
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+        <path
+          d="M1.2 6.2a6 6 0 0 1 11.6 0"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M3.4 7.6a3.4 3.4 0 0 1 7.2 0"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+        <circle cx="7" cy="9" r="0.9" fill="currentColor" />
+      </svg>
+      <svg width="24" height="11" viewBox="0 0 24 11">
+        <rect x="0.5" y="0.5" width="20" height="10" rx="2.2" stroke="currentColor" fill="none" />
+        <rect x="2" y="2" width="14" height="7" rx="1.2" fill="#CCFF00" />
+        <rect x="21.2" y="3.2" width="1.6" height="4.6" rx="0.6" fill="currentColor" />
+      </svg>
     </span>
+  )
+}
+
+function AppStoreBadge({ onClick }: { onClick: () => void }) {
+  return (
+    <a href="/app" onClick={(e) => { e.preventDefault(); onClick() }} aria-label="Download on the App Store" className="block">
+      <svg width="148" height="44" viewBox="0 0 148 44" xmlns="http://www.w3.org/2000/svg">
+        <rect width="148" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
+        <path
+          fill="#fff"
+          d="M24.7 21.6c0-3.3 2.7-4.9 2.8-5-1.5-2.2-3.9-2.5-4.7-2.5-2-.2-3.9 1.2-4.9 1.2-1 0-2.6-1.2-4.3-1.1-2.2.1-4.2 1.3-5.4 3.3-2.3 4-0.6 9.9 1.6 13.2 1.1 1.6 2.4 3.4 4.1 3.3 1.6-.1 2.3-1.1 4.2-1.1s2.5 1.1 4.3 1c1.8-.1 2.9-1.6 4-3.2 1.2-1.8 1.7-3.5 1.8-3.6-.1 0-3.4-1.3-3.5-5.2zm-3.3-9.5c.9-1.1 1.5-2.6 1.3-4.1-1.3.1-2.8.9-3.7 1.9-.8.9-1.5 2.4-1.3 3.8 1.4.1 2.8-.7 3.7-1.6z"
+        />
+        <text x="36" y="16" fill="#fff" fontFamily="Helvetica, Arial, sans-serif" fontSize="8">
+          Download on the
+        </text>
+        <text x="36" y="32" fill="#fff" fontFamily="Helvetica, Arial, sans-serif" fontSize="16" fontWeight="600">
+          App Store
+        </text>
+      </svg>
+    </a>
+  )
+}
+
+function GooglePlayBadge({ onClick }: { onClick: () => void }) {
+  return (
+    <a href="/app" onClick={(e) => { e.preventDefault(); onClick() }} aria-label="Get it on Google Play" className="block">
+      <svg width="156" height="44" viewBox="0 0 156 44" xmlns="http://www.w3.org/2000/svg">
+        <rect width="156" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
+        <polygon fill="#34A853" points="16.2,12.2 16.2,31.8 27.1,22" />
+        <polygon fill="#FBBC04" points="16.2,22 27.1,22 32.4,26.5 16.2,31.8" />
+        <polygon fill="#4285F4" points="32.4,17.5 27.1,22 32.4,26.5 35.2,24.8 35.2,19.2" />
+        <polygon fill="#EA4335" points="16.2,12.2 32.4,17.5 27.1,22" />
+        <text x="42" y="16" fill="#fff" fontFamily="Helvetica, Arial, sans-serif" fontSize="8">
+          GET IT ON
+        </text>
+        <text x="42" y="32" fill="#fff" fontFamily="Helvetica, Arial, sans-serif" fontSize="15" fontWeight="600">
+          Google Play
+        </text>
+      </svg>
+    </a>
   )
 }
 
@@ -355,18 +466,18 @@ function HarvestPreview() {
   }, [stk])
 
   return (
-    <div className="mx-auto w-full max-w-[390px] rounded-[32px] border border-[#222222] bg-[#0A0A0A] p-3">
-      <div className="mb-3 flex items-center justify-between px-2">
-        <span className="text-[11px] font-semibold tracking-[0.16em] text-[#555555]">HARVEST</span>
-        <span className="text-[11px] font-semibold text-[#CCFF00]">LIVE PREVIEW</span>
-      </div>
+    <div>
+      <p className="mb-2 flex items-center justify-between px-1">
+        <span className="text-[10px] font-semibold tracking-[0.16em] text-[#555555]">HARVEST</span>
+        <span className="text-[10px] font-semibold text-[#CCFF00]">LIVE</span>
+      </p>
       <section
-        className="relative overflow-hidden rounded-[22px] border border-[#3d4f00] px-4 pb-3 pt-3"
+        className="relative overflow-hidden rounded-[18px] border border-[#3d4f00] px-3 pb-3 pt-3"
         style={{ background: 'linear-gradient(135deg, #243600 0%, #1a2a12 42%, #12180c 100%)' }}
       >
         <p className="text-[10px] font-semibold tracking-[0.22em] text-[#c8e67a]">KES BALANCE</p>
         <p className="mt-2">
-          <KesAmount value={2400} className="text-[36px] leading-none" />
+          <KesAmount value={2400} className="text-[30px] leading-none" />
         </p>
         <p className="mt-2 text-[11px] tracking-[0.12em] text-[#9aaa88]">
           FOR: <span className="font-semibold text-white">GENERAL WEALTH</span>
@@ -377,27 +488,27 @@ function HarvestPreview() {
         </p>
         <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5">
           <div className="flex items-center gap-2">
-            <PersonAvatar src="/faces/otieno.jpg" alt="Michael.A" size={28} />
-            <p className="text-[13px] font-semibold text-white">Michael.A</p>
+            <PersonAvatar src="/faces/otieno.jpg" alt="Michael.A" size={26} />
+            <p className="text-[12px] font-semibold text-white">Michael.A</p>
           </div>
           <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">KES RAIL</p>
         </div>
       </section>
-      <article className="mt-3 rounded-[22px] border border-[#222222] bg-[#121212] px-4 py-4">
-        <p className="text-[11px] font-semibold tracking-[0.16em] text-[#888888]">STK PUSH</p>
-        <p className="mt-2 text-[16px] font-semibold text-white">05:00 run · FITNESS</p>
-        <p className="mt-1 font-amount text-[22px] text-white">KES 100</p>
+      <article className="mt-2 rounded-[18px] border border-[#222222] bg-[#121212] px-3 py-3">
+        <p className="text-[10px] font-semibold tracking-[0.16em] text-[#888888]">STK PUSH</p>
+        <p className="mt-1 text-[14px] font-semibold text-white">05:00 run · FITNESS</p>
+        <p className="mt-0.5 font-amount text-[20px] text-white">KES 100</p>
         <button
           type="button"
           onClick={() => setStk('pending')}
           disabled={stk !== 'idle'}
-          className="mt-3 w-full rounded-full bg-[#CCFF00] py-3 text-[14px] font-semibold text-black disabled:opacity-70"
+          className="mt-2 w-full rounded-full bg-[#CCFF00] py-2.5 text-[13px] font-semibold text-black disabled:opacity-70"
         >
-          {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked · ResultCode 0'}
+          {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
         </button>
         {stk === 'locked' ? (
-          <p className="mt-2 flex items-center gap-1 text-[12px] text-[#3DD68C]">
-            <Check size={14} /> Callback credited. Habit is on the rail.
+          <p className="mt-2 flex items-center gap-1 text-[11px] text-[#3DD68C]">
+            <Check size={13} /> M-Pesa confirmed. Your habit is earning.
           </p>
         ) : null}
       </article>
