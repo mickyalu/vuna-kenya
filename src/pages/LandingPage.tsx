@@ -13,7 +13,6 @@ import {
 } from '../lib/legal'
 import { formatKes } from '../lib/money'
 import { usePwaInstall } from '../lib/pwa'
-import { formatWhatsAppReport } from '../lib/reports'
 import { goApp } from '../lib/route'
 import { later } from '../lib/runtime'
 import { MMF_ANNUAL_RATE, projectHabitYield } from '../lib/yield'
@@ -22,13 +21,6 @@ import { PersonAvatar } from '../components/PersonAvatar'
 import { useYieldTick } from '../lib/useYieldTick'
 
 const PILLARS: PillarId[] = ['FITNESS', 'HEALTH', 'HABITS', 'LIFESTYLE']
-const SAMPLE_WRAP = formatWhatsAppReport('Michael', 'Sep 14 – Sep 20', {
-  total_saved_kes: 2400,
-  habits_completed_count: 8,
-  yield_earned_kes: 34.5,
-  current_streak_days: 4,
-  consistency_pct: 100,
-})
 
 type LegalKey = 'terms' | 'privacy' | 'cma' | 'contact'
 
@@ -425,9 +417,42 @@ function WhatsAppFrame() {
           <p className="text-[11px] text-[#888888]">Friday 18:00 · WhatsApp</p>
         </div>
       </div>
-      <pre className="overflow-x-auto whitespace-pre rounded-2xl bg-[#121212] px-3 py-3 font-mono text-[10px] leading-[1.45] text-[#E8E8E8]">
-        {SAMPLE_WRAP}
-      </pre>
+      <div className="rounded-2xl bg-[#121212] px-3 py-3">
+        <p className="text-[12px] font-semibold text-[#CCFF00]">🟩 Weekly Report | Sep 14 – Sep 20</p>
+        <p className="mt-1 text-[15px] font-semibold text-white">Your Week on VUNA 🌾</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-[#888888]">
+          Here is everything you accomplished with VUNA this week. Numbers are pulled straight from
+          your behavioral dashboard.
+        </p>
+        <div className="mt-3 rounded-xl border border-[#222222] px-3 py-4 text-center">
+          <p className="font-amount text-[28px] leading-none text-white">KES 2,400</p>
+          <p className="mt-2 text-[10px] font-semibold tracking-[0.16em] text-[#888888]">
+            TOTAL MICRO-SAVED
+          </p>
+        </div>
+        <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-xl border border-[#222222]">
+          <div className="border-r border-b border-[#222222] px-3 py-3 text-center">
+            <p className="font-amount text-[22px] leading-none">8</p>
+            <p className="mt-1 text-[10px] font-semibold tracking-[0.12em] text-[#888888]">HABITS LOGGED</p>
+          </div>
+          <div className="border-b border-[#222222] px-3 py-3 text-center">
+            <p className="font-amount text-[22px] leading-none">100%</p>
+            <p className="mt-1 text-[10px] font-semibold tracking-[0.12em] text-[#888888]">CONSISTENCY</p>
+          </div>
+          <div className="border-r border-[#222222] px-3 py-3 text-center">
+            <p className="font-amount text-[18px] leading-none">KES 34.50</p>
+            <p className="mt-1 text-[10px] font-semibold tracking-[0.12em] text-[#888888]">YIELD GAINED</p>
+          </div>
+          <div className="px-3 py-3 text-center">
+            <p className="font-amount text-[22px] leading-none">4</p>
+            <p className="mt-1 text-[10px] font-semibold tracking-[0.12em] text-[#888888]">STREAK DAYS</p>
+          </div>
+        </div>
+        <p className="mt-3 text-[12px] leading-relaxed text-white">
+          🔥 Weekend Warning: Stay locked in! Keep your discipline steady over the weekend.
+        </p>
+        <p className="mt-2 text-[11px] text-[#888888]">📱 Manage notifications in your VUNA Profile settings.</p>
+      </div>
     </div>
   )
 }
