@@ -446,11 +446,12 @@ function SessionsArtwork() {
       />
       <ellipse cx="430" cy="455" rx="170" ry="18" fill="#000" opacity="0.55" />
       <g fill="#050505">
-        <circle cx="430" cy="168" r="28" />
-        <path d="M404 200c8-10 48-10 56 0 10 14 18 48 10 92-4 22-18 28-38 28s-34-6-38-28c-8-44 0-78 10-92z" />
-        <path d="M392 318c6 8 22 16 38 16s32-8 38-16c8 46 10 86 4 118-28 6-56 6-84 0-6-32-4-72 4-118z" />
-        <path d="M390 232c-22 18-38 8-52-4 6 40 18 62 34 78 10-18 16-42 18-74z" />
-        <path d="M474 232c22 18 38 8 52-4-6 40-18 62-34 78-10-18-16-42-18-74z" />
+        <circle cx="430" cy="156" r="26" />
+        <path d="M402 186c8-9 48-9 56 0 14 16 20 52 14 98-4 18-20 26-42 26s-38-8-42-26c-6-46 0-82 14-98z" />
+        <path d="M396 220c-20 12-40 6-48-6 10 42 22 70 38 88 6-24 10-52 10-82z" />
+        <path d="M464 220c20 12 40 6 48-6-10 42-22 70-38 88-6-24-10-52-10-82z" />
+        <path d="M406 312c4 48 6 88 8 116 18 4 28 4 32-6-4-36-4-74-2-110z" />
+        <path d="M454 312c-4 48-6 88-8 116-18 4-28 4-32-6 4-36 4-74 2-110z" />
       </g>
       <g fill="#0A0A0A" opacity="0.85">
         <ellipse cx="220" cy="500" rx="42" ry="28" />
@@ -553,7 +554,7 @@ function FaqSection() {
                 id={`faq-panel-${index}`}
                 role="region"
                 aria-labelledby={`faq-button-${index}`}
-                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
                   expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                 }`}
               >
