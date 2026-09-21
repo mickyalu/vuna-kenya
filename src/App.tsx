@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CongratsToast } from './components/CongratsToast'
 import { GiftSheet } from './components/GiftSheet'
+import { EditProfileSheet } from './components/EditProfileSheet'
 import { LockComposer } from './components/LockComposer'
 import { LogSheet } from './components/LogSheet'
 import { NoticeBell } from './components/NoticeBell'
@@ -28,7 +29,7 @@ function splashRemaining() {
 }
 
 function Shell() {
-  const { tab, handleBack } = useVuna()
+  const { tab, handleBack, profileEditOpen } = useVuna()
 
   useEffect(() => onHardwareBack(handleBack), [handleBack])
 
@@ -50,6 +51,7 @@ function Shell() {
         <LogSheet />
         <LockComposer />
         <GiftSheet />
+        {profileEditOpen ? <EditProfileSheet /> : null}
         <NoticeInbox />
         <CongratsToast />
       </div>

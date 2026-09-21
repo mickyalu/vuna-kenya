@@ -28,6 +28,34 @@ export function cardholderName(firstName: string, lastInitial: string) {
   return `${first}.${initial}`
 }
 
+export type ProfileDraft = {
+  firstName: string
+  lastInitial: string
+  avatarId: string
+}
+
+export type ProfileDraftResult =
+  | { ok: true; firstName: string; lastInitial: string; avatarId: string; cardName: string }
+  | { ok: false; error: string }
+
+export function parseProfileDraft(input: ProfileDraft): ProfileDraftResult {
+  const first = input.firstName.replace(/[^a-zA-Z '.-]/g, '').trim().slice(0, 18)
+  const initial = input.lastInitial.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase()
+  if (!first) return { ok: false, error: 'Add a first name for the card.' }
+  if (!initial) return { ok: false, error: 'Add a last initial.' }
+  if (!AVATAR_CHOICES.some((a) => a.id === input.avatarId)) {
+    return { ok: false, error: 'Pick a card photo.' }
+  }
+  const titled = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+  return {
+    ok: true,
+    firstName: titled,
+    lastInitial: initial,
+    avatarId: input.avatarId,
+    cardName: cardholderName(titled, initial),
+  }
+}
+
 export const FACE_PHOTOS: Record<string, string> = {
   Mkuu: '/faces/mkuu.jpg',
   Nzomo: '/faces/otieno.jpg',

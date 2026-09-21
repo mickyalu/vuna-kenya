@@ -13,16 +13,13 @@ export function ProfileTab() {
     connectWhatsApp,
     wrapEnabled,
     setWrapEnabled,
-    firstName,
-    setFirstName,
-    lastInitial,
-    setLastInitial,
     cardName,
     avatarUrl,
     mpesaPhone,
     mpesaMasked,
     setMpesaPhone,
     giftWallet,
+    openProfileEdit,
   } = useVuna()
   const [legal, setLegal] = useState<LegalPage | null>(null)
 
@@ -35,34 +32,26 @@ export function ProfileTab() {
         <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PROFILE</h1>
       </header>
 
-      <label className="block rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3">
+      <button
+        type="button"
+        onClick={openProfileEdit}
+        aria-label="Edit profile"
+        className="block w-full rounded-[22px] border border-vuna-border bg-vuna-card px-4 py-3 text-left"
+      >
         <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
           CARDHOLDER
         </span>
         <div className="mt-2 flex items-center gap-3">
           <PersonAvatar src={avatarUrl} alt={cardName} size={44} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-end">
-              <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                aria-label="First name"
-                className="min-w-[3ch] bg-transparent px-0 text-[18px] font-semibold tracking-tight text-white outline-none"
-                style={{ fieldSizing: 'content', width: 'auto' }}
-              />
-              <span className="pb-px text-[18px] font-semibold text-white">.</span>
-              <input
-                value={lastInitial}
-                onChange={(e) => setLastInitial(e.target.value)}
-                maxLength={1}
-                aria-label="Last initial"
-                className="w-[1em] bg-transparent px-0 text-left text-[18px] font-semibold uppercase tracking-tight text-white outline-none"
-              />
-            </div>
+            <p className="text-[18px] font-semibold tracking-tight text-white">{cardName}</p>
             <p className="mt-0.5 text-[12px] text-vuna-muted">On the card as {cardName}</p>
           </div>
+          <span className="shrink-0 rounded-full border border-vuna-lime px-3 py-1.5 text-[13px] font-semibold text-vuna-lime">
+            Edit
+          </span>
         </div>
-      </label>
+      </button>
 
       <section className="rounded-[22px] border border-[#3d4f00] bg-[#141a08] px-4 py-4">
         <p className="text-[11px] font-semibold tracking-[0.16em] text-vuna-lime">GIFT WALLET</p>
@@ -178,20 +167,26 @@ export function ProfileTab() {
           ACCOUNT
         </h2>
         <div className="overflow-hidden rounded-[22px] border border-vuna-border bg-vuna-card">
+          <button
+            type="button"
+            onClick={openProfileEdit}
+            className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+          >
+            <span className="text-[15px] text-white">Edit profile</span>
+            <ChevronRight size={16} className="text-vuna-dim" />
+          </button>
           {(
             [
               ['contact', 'Contact us'],
               ['terms', 'Terms and conditions'],
               ['optout', 'Opt out'],
             ] as const
-          ).map(([id, label], index) => (
+          ).map(([id, label]) => (
             <button
               key={id}
               type="button"
               onClick={() => setLegal(id)}
-              className={`flex w-full items-center justify-between px-4 py-3.5 text-left ${
-                index ? 'border-t border-vuna-border' : ''
-              }`}
+              className="flex w-full items-center justify-between border-t border-vuna-border px-4 py-3.5 text-left"
             >
               <span className="text-[15px] text-white">{label}</span>
               <ChevronRight size={16} className="text-vuna-dim" />

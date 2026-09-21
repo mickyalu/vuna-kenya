@@ -1,4 +1,4 @@
-import { Check, Gift, MessageCircle, Users } from 'lucide-react'
+import { Check, Gift, MessageCircle, User, Users } from 'lucide-react'
 import { useVuna } from '../store/VunaContext'
 
 export function CongratsToast() {
@@ -9,13 +9,16 @@ export function CongratsToast() {
     notice.kind === 'gift_in' || notice.kind === 'gift_sent' || notice.kind === 'gift_reply'
   const tribeLike = notice.kind === 'tribe'
   const wrapLike = notice.kind === 'wrap'
+  const profileLike = notice.kind === 'profile'
   const Icon = tribeLike
     ? Users
-    : notice.kind === 'gift_reply'
-      ? MessageCircle
-      : giftLike
-        ? Gift
-        : Check
+    : profileLike
+      ? User
+      : notice.kind === 'gift_reply'
+        ? MessageCircle
+        : giftLike
+          ? Gift
+          : Check
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[95] flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -26,7 +29,7 @@ export function CongratsToast() {
           if (giftLike) {
             setTab('pulse')
             setPulseTab('feed')
-          } else if (tribeLike || wrapLike) {
+          } else if (tribeLike || wrapLike || profileLike) {
             setTab('profile')
           }
         }}

@@ -44,7 +44,7 @@ React 19, TypeScript, Vite, Tailwind CSS, Lucide icons.
 4. Open Lock to see deposits and remaining time. Use Vuna Transfer with a Safaricom number (`07XXXXXXXX` or `+2547XXXXXXXX`).
 5. On Pulse, salute a win or tap Vuna Gift — pick 10, 20 or 50. That STK hits VUNA paybill `400200`, not protocol. The gift lands live on their Pulse; they can reply and you get a notice.
 6. The bell (top right) keeps every notice. Tap a toast or the bell if you missed it.
-7. On Profile, set your M-Pesa number. Gift wallet is paybill credits, separate from lock.
+7. On Profile, tap Edit profile (or the cardholder card) to change first name, last initial, and card photo. Set your M-Pesa number on the same page. Gift wallet is paybill credits, separate from lock.
 8. Tribes live on Profile. Join a catalog circle, sit in one, or Create and send the invite link (clipboard + WhatsApp, like a Strava club). Opening `?join=5am-club` auto-joins.
 9. Account on Profile opens Contact us, Terms and conditions, and Opt out (leave tribes, wrap off, erase this device).
 10. Friday 18:00 Wrap on Profile is the weekly WhatsApp auditor. Toggle it to enable or disable. The scorecard is KES micro-saved, habits logged, consistency, yield, and streak.

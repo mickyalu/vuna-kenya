@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS } from '../lib/avatars'
+import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS, parseProfileDraft, type ProfileDraft, type ProfileDraftResult } from '../lib/avatars'
 import {
   CATALOG_CLUBS,
   clubFromTribe,
@@ -256,6 +256,10 @@ type VunaState = {
   lastInitial: string
   setLastInitial: (initial: string) => void
   cardName: string
+  profileEditOpen: boolean
+  openProfileEdit: () => void
+  closeProfileEdit: () => void
+  saveProfile: (input: ProfileDraft) => ProfileDraftResult
   balanceHidden: boolean
   toggleBalanceHidden: () => void
   activeTribePillar: PillarId
@@ -339,6 +343,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     () => (readStore('vuna-last-initial') || 'A').slice(0, 1).toUpperCase(),
   )
   const cardName = cardholderName(firstName, lastInitial)
+  const [profileEditOpen, setProfileEditOpen] = useState(false)
   const [balanceHidden, setBalanceHidden] = useState(
     () => readStore('vuna-hide-balance') === 'on',
   )
@@ -1151,6 +1156,35 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     writeStore('vuna-last-initial', next)
   }, [])
 
+  const openProfileEdit = useCallback(() => setProfileEditOpen(true), [])
+  const closeProfileEdit = useCallback(() => setProfileEditOpen(false), [])
+
+  const saveProfile = useCallback((input: ProfileDraft): ProfileDraftResult => {
+    const parsed = parseProfileDraft(input)
+    if (!parsed.ok) return parsed
+    setFirstNameState(parsed.firstName)
+    writeStore('vuna-first-name', parsed.firstName)
+    setLastInitialState(parsed.lastInitial)
+    writeStore('vuna-last-initial', parsed.lastInitial)
+    setAvatarIdState(parsed.avatarId)
+    writeStore('vuna-avatar', parsed.avatarId)
+    setProfileEditOpen(false)
+    pushNotice({
+      id: uid(),
+      kind: 'profile',
+      title: 'Profile updated',
+      body: `The card now reads ${parsed.cardName}.`,
+      unread: true,
+    })
+    void fetch('/api/profile/wrap', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: wrapEnabled, name: parsed.cardName }),
+    }).catch(() => {})
+    return parsed
+  }, [pushNotice, wrapEnabled])
+
   const toggleBalanceHidden = useCallback(() => {
     setBalanceHidden((v) => {
       const next = !v
@@ -1339,6 +1373,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [transfer.amount, transfer.phone])
 
   const handleBack = useCallback(() => {
+    if (profileEditOpen) {
+      setProfileEditOpen(false)
+      return true
+    }
     if (inboxOpen) {
       setInboxOpen(false)
       return true
@@ -1377,7 +1415,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       return true
     }
     return false
-  }, [inboxOpen, giftDraft.open, composer.open, composer.sending, stk.open, transfer.open, logDraft.open, liveOpen, notice, tab])
+  }, [profileEditOpen, inboxOpen, giftDraft.open, composer.open, composer.sending, stk.open, transfer.open, logDraft.open, liveOpen, notice, tab])
 
   const confirmedLockKes = lockKesFromCredits(loadCredits())
 
@@ -1452,6 +1490,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     lastInitial,
     setLastInitial,
     cardName,
+    profileEditOpen,
+    openProfileEdit,
+    closeProfileEdit,
+    saveProfile,
     balanceHidden,
     toggleBalanceHidden,
     activeTribePillar,
