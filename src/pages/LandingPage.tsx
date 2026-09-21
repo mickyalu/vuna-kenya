@@ -606,7 +606,7 @@ function FaqSection() {
 
 function PhoneFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[338px]">
+    <div className="mx-auto w-full max-w-[310px] sm:max-w-[328px] lg:max-w-[348px]">
       <div className="relative">
         <span className="absolute -left-[3px] top-[110px] h-8 w-[3px] rounded-l-sm bg-[#3a3a3a]" />
         <span className="absolute -left-[3px] top-[152px] h-14 w-[3px] rounded-l-sm bg-[#3a3a3a]" />
@@ -728,8 +728,10 @@ function GooglePlayBadge({ onClick }: { onClick: () => void }) {
 }
 
 function HarvestPreview() {
-  const tick = useYieldTick(0.1698, 0.0003, 1200, true)
+  const tick = useYieldTick(0.1641, 0.0003, 1200, true)
+  const [picked, setPicked] = useState<Extract<PillarId, 'FITNESS' | 'LIFESTYLE'>>('FITNESS')
   const [stk, setStk] = useState<'idle' | 'pending' | 'locked'>('idle')
+  const activity = picked === 'FITNESS' ? '05:00 run' : 'Evening walk'
 
   useEffect(() => {
     if (stk !== 'pending') return
@@ -743,43 +745,74 @@ function HarvestPreview() {
         <span className="text-[10px] font-semibold text-[#CCFF00]">LIVE</span>
       </p>
       <section
-        className="relative overflow-hidden rounded-[18px] border border-[#3d4f00] px-3 pb-3 pt-3"
+        className="relative overflow-hidden rounded-[16px] border border-[#3d4f00] px-3 pb-2.5 pt-2.5"
         style={{ background: 'linear-gradient(135deg, #243600 0%, #1a2a12 42%, #12180c 100%)' }}
       >
-        <p className="text-[10px] font-semibold tracking-[0.18em] text-[#c8e67a]">LIFESTYLE</p>
-        <p className="mt-2 text-[10px] font-semibold tracking-[0.22em] text-[#c8e67a]">KES BALANCE</p>
-        <p className="mt-1">
-          <KesAmount value={2400} className="text-[28px] leading-none" />
+        <p className="text-[10px] font-semibold tracking-[0.22em] text-[#c8e67a]">KES BALANCE</p>
+        <p className="mt-1.5">
+          <KesAmount value={2400} className="text-[26px] leading-none" />
         </p>
-        <p className="mt-3 text-[11px] font-medium text-[#3DD68C]">
+        <p className="mt-1.5 text-[10px] tracking-[0.12em] text-[#9aaa88]">
+          FOR: <span className="font-semibold text-white">GENERAL WEALTH</span>
+        </p>
+        <p className="mt-2 text-[11px] font-medium text-[#3DD68C]">
           +<KesAmount value={tick} digits={4} tone="mint" className="text-[11px] font-medium" /> Yield
           Ticking
         </p>
-        <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5">
+        <div className="mt-2.5 flex items-center justify-between border-t border-white/10 pt-2">
           <div className="flex items-center gap-2">
-            <PersonAvatar src="/faces/otieno.jpg" alt="Michael.A" size={26} />
+            <PersonAvatar src="/faces/otieno.jpg" alt="Michael.A" size={24} />
             <p className="text-[12px] font-semibold text-white">Michael.A</p>
           </div>
           <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">KES RAIL</p>
         </div>
       </section>
-      <article className="rounded-[18px] border border-[#CCFF00] bg-[#121212] px-3 py-3">
-        <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">FITNESS</p>
-        <p className="mt-1 text-[14px] font-semibold text-white">05:00 run · KES 100</p>
-      </article>
-      <button
-        type="button"
-        onClick={() => setStk('pending')}
-        disabled={stk !== 'idle'}
-        className="w-full rounded-full bg-[#CCFF00] py-2.5 text-[13px] font-semibold text-black disabled:opacity-70"
-      >
-        {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
-      </button>
-      {stk === 'locked' ? (
-        <p className="flex items-center gap-1 px-1 text-[11px] text-[#3DD68C]">
-          <Check size={13} /> M-Pesa confirmed. Your habit is earning.
+      <div className="grid grid-cols-2 gap-2">
+        {(['FITNESS', 'LIFESTYLE'] as const).map((id) => {
+          const meta = PILLAR_CATALOG[id]
+          const selected = picked === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                setPicked(id)
+                setStk('idle')
+              }}
+              className={`rounded-[16px] border bg-[#121212] px-2 pb-2.5 pt-2.5 text-center ${
+                selected ? 'border-[#CCFF00]' : 'border-[#222222]'
+              }`}
+            >
+              <KesAmount value={id === 'FITNESS' ? 100 : 0} tone="lime" className="text-[15px] leading-none" />
+              <p className="mt-1.5 text-[18px] leading-none">{meta.emoji}</p>
+              <p className="mt-1 text-[11px] font-extrabold tracking-wide text-white">{meta.label}</p>
+              <p className="mt-0.5 text-[8px] font-semibold tracking-[0.12em] text-[#555555]">
+                TOTAL ACCUMULATED
+              </p>
+            </button>
+          )
+        })}
+      </div>
+      <article className="rounded-[16px] border border-[#222222] bg-[#121212] px-3 py-2.5">
+        <p className="text-[10px] font-semibold tracking-[0.16em] text-[#888888]">STK PUSH</p>
+        <p className="mt-1 text-[13px] font-semibold text-white">
+          {activity} · {picked}
         </p>
-      ) : null}
+        <p className="mt-0.5 font-amount text-[18px] leading-none text-white">KES 100</p>
+        <button
+          type="button"
+          onClick={() => setStk('pending')}
+          disabled={stk !== 'idle'}
+          className="mt-2 w-full rounded-full bg-[#CCFF00] py-2 text-[13px] font-semibold text-black disabled:opacity-70"
+        >
+          {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
+        </button>
+        {stk === 'locked' ? (
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#3DD68C]">
+            <Check size={13} /> M-Pesa confirmed. Your habit is earning.
+          </p>
+        ) : null}
+      </article>
     </div>
   )
 }
