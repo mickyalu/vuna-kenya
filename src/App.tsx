@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { CongratsToast } from './components/CongratsToast'
 import { GiftSheet } from './components/GiftSheet'
 import { EditProfileSheet } from './components/EditProfileSheet'
@@ -52,8 +53,9 @@ function AppChromeHeader() {
           aria-label="Back to Main Site"
         >
           <VunaMark className="h-7 w-7 shrink-0" />
-          <span className="truncate text-[12px] font-semibold text-white sm:text-[13px]">
-            ← Back to Main Site
+          <span className="flex min-w-0 items-center gap-1 truncate text-[12px] font-semibold text-white sm:text-[13px]">
+            <ArrowLeft size={14} strokeWidth={2.4} className="shrink-0" />
+            Back to Main Site
           </span>
         </button>
         <div className="flex shrink-0 items-center gap-2">
