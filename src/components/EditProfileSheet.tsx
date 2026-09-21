@@ -64,41 +64,42 @@ export function EditProfileSheet() {
           </div>
         </div>
 
-        <label className="mb-3 block">
-          <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
-            FIRST NAME
-          </span>
-          <input
-            value={draftFirst}
-            onChange={(e) => {
-              setDraftFirst(e.target.value)
-              setError(null)
-            }}
-            autoComplete="given-name"
-            maxLength={18}
-            aria-label="First name"
-            className="mt-1 w-full rounded-2xl border border-vuna-border bg-vuna-raised px-4 py-3 text-[16px] text-white outline-none placeholder:text-vuna-dim"
-            placeholder="Amina"
-          />
-        </label>
-
-        <label className="mb-4 block">
-          <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
-            LAST INITIAL
-          </span>
-          <input
-            value={draftInitial}
-            onChange={(e) => {
-              setDraftInitial(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase())
-              setError(null)
-            }}
-            maxLength={1}
-            autoComplete="off"
-            aria-label="Last initial"
-            className="mt-1 w-16 rounded-2xl border border-vuna-border bg-vuna-raised px-4 py-3 text-center text-[18px] font-semibold uppercase text-white outline-none"
-            placeholder="K"
-          />
-        </label>
+        <div className="mb-4 grid grid-cols-[1fr_4.75rem] gap-3">
+          <label className="block">
+            <span className="block text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+              FIRST NAME
+            </span>
+            <input
+              value={draftFirst}
+              onChange={(e) => {
+                setDraftFirst(e.target.value)
+                setError(null)
+              }}
+              autoComplete="given-name"
+              maxLength={18}
+              aria-label="First name"
+              className="mt-1 w-full rounded-2xl border border-vuna-border bg-vuna-raised px-4 py-3 text-[16px] text-white outline-none placeholder:text-vuna-dim"
+              placeholder="Amina"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+              INITIAL
+            </span>
+            <input
+              value={draftInitial}
+              onChange={(e) => {
+                setDraftInitial(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase())
+                setError(null)
+              }}
+              maxLength={1}
+              autoComplete="off"
+              aria-label="Last initial"
+              className="mt-1 w-full rounded-2xl border border-vuna-border bg-vuna-raised py-3 text-center text-[18px] font-semibold uppercase text-white outline-none"
+              placeholder="K"
+            />
+          </label>
+        </div>
 
         <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
           CARD PHOTO
