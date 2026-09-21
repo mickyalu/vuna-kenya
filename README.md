@@ -20,17 +20,17 @@ npm install
 npm run dev
 ```
 
-The Vite server binds to `http://127.0.0.1:43173` and serves `/api/*` (STK push, status, callback).
+The Vite server binds to `http://127.0.0.1:43173` and serves `/api/*` (STK push, status, callback, Friday wrap cron).
 
 Copy `.env.example` to `.env.local` and add Daraja sandbox keys when Safaricom issues them. Never put Consumer Key, Secret, or Passkey in `VITE_*` variables.
+
+Friday 18:00 EAT wrap: Vercel Cron hits `GET /api/cron/friday-wrap` on `0 15 * * 5` (15:00 UTC). Set `CRON_SECRET`. Recipients come from Supabase `profiles` where `friday_wrap_enabled = true`, or from the local wrap store when Supabase is unset. WhatsApp is mocked until `WHATSAPP_API_URL` and `WHATSAPP_API_TOKEN` are set. Schema: `supabase/migrations/001_profiles_friday_wrap.sql`.
 
 ```bash
 npm test
 ```
 
 Runs MSISDN, integer KES, PII mask, and callback idempotency checks. See `SECURITY.md` for the CMA audit.
-
-## Stack
 
 ## Stack
 
@@ -47,3 +47,4 @@ React 19, TypeScript, Vite, Tailwind CSS, Lucide icons.
 7. On Profile, set your M-Pesa number. Gift wallet is paybill credits, separate from lock.
 8. Tribes live on Profile. Join a catalog circle, sit in one, or Create and send the invite link (clipboard + WhatsApp, like a Strava club). Opening `?join=5am-club` auto-joins.
 9. Account on Profile opens Contact us, Terms and conditions, and Opt out (leave tribes, wrap off, erase this device).
+10. Friday 18:00 Wrap on Profile is the weekly WhatsApp auditor. Toggle it to enable or disable. The scorecard is KES micro-saved, habits logged, consistency, yield, and streak.

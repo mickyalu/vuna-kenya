@@ -12,6 +12,7 @@ import { applyCallback, asPublic, getByCheckout, insertPending, newIds } from '.
 import { logError, logInfo, logWarn } from './log.ts'
 import { allowStkPush, bindCheckout, clearPendingPush, releaseCheckout } from './rate-limit.ts'
 import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts'
+import { cronAuthorized, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
   const headers = new Headers(extra)
@@ -233,6 +234,38 @@ export async function handleStkCallback(req: Request) {
   return json({ ResultCode: 0, ResultDesc: 'Accepted' })
 }
 
+export async function handleProfileWrap(req: Request) {
+  if (req.method !== 'POST') return error('Method not allowed', 405)
+  let body: { enabled?: boolean; name?: string } = {}
+  try {
+    body = (await req.json()) as { enabled?: boolean; name?: string }
+  } catch {
+    return error('Invalid JSON')
+  }
+  if (typeof body.enabled !== 'boolean') return error('enabled must be true or false')
+  const resolved = resolveMsisdn(req)
+  if (!resolved) return error('Register a Safaricom MSISDN first.', 401)
+  const saved = await upsertWrapProfile(resolved.msisdn, body.enabled, body.name)
+  logInfo(`friday wrap ${body.enabled ? 'on' : 'off'}`, saved.phone_number)
+  const headers: Record<string, string> = {}
+  if (resolved.sid) {
+    const secure = (req.headers.get('x-forwarded-proto') || 'http') === 'https'
+    headers['Set-Cookie'] = cookieHeader(resolved.sid, secure)
+  }
+  return json(
+    { friday_wrap_enabled: saved.friday_wrap_enabled, source: saved.source },
+    200,
+    headers,
+  )
+}
+
+export async function handleFridayWrap(req: Request) {
+  if (req.method !== 'GET' && req.method !== 'POST') return error('Method not allowed', 405)
+  if (!cronAuthorized(req)) return error('Unauthorized', 401)
+  const result = await runFridayWrap()
+  return json(result)
+}
+
 export async function handleApi(req: Request): Promise<Response | null> {
   const path = new URL(req.url).pathname.replace(/\/+$/, '') || '/'
   if (req.method === 'OPTIONS') {
@@ -240,7 +273,7 @@ export async function handleApi(req: Request): Promise<Response | null> {
       status: 204,
       headers: {
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Vuna-Session',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Cron-Secret, X-Vuna-Session',
         'Access-Control-Allow-Credentials': 'true',
       },
     })
@@ -250,5 +283,7 @@ export async function handleApi(req: Request): Promise<Response | null> {
   if (path === '/api/stk/push') return handleStkPush(req)
   if (path === '/api/stk/status') return handleStkStatus(req)
   if (path === '/api/stk/callback') return handleStkCallback(req)
+  if (path === '/api/profile/wrap') return handleProfileWrap(req)
+  if (path === '/api/cron/friday-wrap') return handleFridayWrap(req)
   return null
 }

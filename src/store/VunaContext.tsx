@@ -829,8 +829,17 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     const masked = maskMsisdn(n)
     setMpesaMasked(masked)
     writeStore('vuna-mpesa-masked', masked)
-    void registerMsisdn(n).catch(() => {})
-  }, [])
+    void registerMsisdn(n)
+      .then(() =>
+        fetch('/api/profile/wrap', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: wrapEnabled, name: cardName }),
+        }),
+      )
+      .catch(() => {})
+  }, [cardName, wrapEnabled])
 
   const pushNotice = useCallback((item: InAppNotice) => {
     setInbox((prev) => [item, ...prev.filter((n) => n.id !== item.id)])
@@ -1153,7 +1162,22 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const setWrapEnabled = useCallback((v: boolean) => {
     setWrapEnabledState(v)
     writeStore('vuna-wrap', v ? 'on' : 'off')
-  }, [])
+    void fetch('/api/profile/wrap', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: v, name: cardName }),
+    }).catch(() => {})
+    pushNotice({
+      id: uid(),
+      kind: 'wrap',
+      title: v ? 'Weekly Friday Wrap enabled' : 'Weekly Friday Wrap disabled',
+      body: v
+        ? 'WhatsApp scorecard lands Friday 18:00 EAT when a Safaricom number is on file.'
+        : 'No Friday 18:00 auditor message until you switch it back on.',
+      unread: true,
+    })
+  }, [cardName, pushNotice])
 
   const setActiveTribe = useCallback((id: PillarId) => {
     setActiveTribePillar(id)

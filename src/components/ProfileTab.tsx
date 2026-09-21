@@ -157,6 +157,7 @@ export function ProfileTab() {
           <button
             type="button"
             role="switch"
+            aria-label="Friday 18:00 Wrap"
             aria-checked={wrapEnabled}
             onClick={() => setWrapEnabled(!wrapEnabled)}
             className={`relative h-7 w-12 rounded-full transition ${

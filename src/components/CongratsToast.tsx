@@ -8,6 +8,7 @@ export function CongratsToast() {
   const giftLike =
     notice.kind === 'gift_in' || notice.kind === 'gift_sent' || notice.kind === 'gift_reply'
   const tribeLike = notice.kind === 'tribe'
+  const wrapLike = notice.kind === 'wrap'
   const Icon = tribeLike
     ? Users
     : notice.kind === 'gift_reply'
@@ -25,7 +26,7 @@ export function CongratsToast() {
           if (giftLike) {
             setTab('pulse')
             setPulseTab('feed')
-          } else if (tribeLike) {
+          } else if (tribeLike || wrapLike) {
             setTab('profile')
           }
         }}

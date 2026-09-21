@@ -29,7 +29,9 @@ export type NotifyEvent =
   | { kind: 'gift_reply'; handle: string; text: string }
 
 export function describeNotify(event: NotifyEvent): string {
-  if (event.kind === 'friday_wrap') return 'Weekly auditor wrap is due Friday 18:00.'
+  if (event.kind === 'friday_wrap') {
+    return 'Weekly auditor wrap lands on WhatsApp Friday 18:00 EAT when the Profile toggle is on.'
+  }
   if (event.kind === 'streak_risk') return `Streak at risk in ${event.hoursLeft}h.`
   if (event.kind === 'tribe_salute') return `${event.handle} saluted your vuna.`
   if (event.kind === 'stk_success') {

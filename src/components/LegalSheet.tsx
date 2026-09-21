@@ -83,6 +83,7 @@ export function LegalSheet({
               <button
                 type="button"
                 role="switch"
+                aria-label="Friday 18:00 wrap"
                 aria-checked={wrapEnabled}
                 onClick={() => setWrapEnabled(!wrapEnabled)}
                 className={`relative h-7 w-12 shrink-0 rounded-full ${

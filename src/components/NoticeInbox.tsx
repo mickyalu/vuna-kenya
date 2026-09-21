@@ -33,7 +33,7 @@ export function NoticeInbox() {
                   if (item.kind === 'gift_in' || item.kind === 'gift_sent' || item.kind === 'gift_reply') {
                     setTab('pulse')
                     setPulseTab('feed')
-                  } else if (item.kind === 'tribe') {
+                  } else if (item.kind === 'tribe' || item.kind === 'wrap') {
                     setTab('profile')
                   }
                 }}
@@ -42,7 +42,7 @@ export function NoticeInbox() {
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f2a00] text-vuna-lime">
                   {item.kind === 'gift_reply' ? (
                     <MessageCircle size={14} />
-                  ) : item.kind === 'stk' ? (
+                  ) : item.kind === 'stk' || item.kind === 'wrap' ? (
                     <Check size={14} />
                   ) : item.kind === 'tribe' ? (
                     <Users size={14} />
