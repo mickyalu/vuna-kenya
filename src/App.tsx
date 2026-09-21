@@ -17,6 +17,8 @@ import { ProfileTab } from './components/ProfileTab'
 import { PulseTab } from './components/PulseTab'
 import { VunaProvider, useVuna } from './store/VunaContext'
 import { later, onHardwareBack } from './lib/runtime'
+import { useVunaRoute } from './lib/route'
+import { LandingPage } from './pages/LandingPage'
 
 const SPLASH_HOLD_MS = 2200
 const SPLASH_FADE_MS = 500
@@ -59,7 +61,7 @@ function Shell() {
   )
 }
 
-export default function App() {
+function VunaDashboardApp() {
   const [loading, setLoading] = useState(true)
   const [splashMounted, setSplashMounted] = useState(true)
 
@@ -73,11 +75,21 @@ export default function App() {
   }, [loading])
 
   return (
-    <ErrorBoundary>
+    <>
       <VunaProvider>
         <Shell />
       </VunaProvider>
       {splashMounted ? <SplashScreen fading={!loading} /> : null}
+    </>
+  )
+}
+
+export default function App() {
+  const route = useVunaRoute()
+
+  return (
+    <ErrorBoundary>
+      {route === 'app' ? <VunaDashboardApp /> : <LandingPage />}
     </ErrorBoundary>
   )
 }

@@ -176,8 +176,7 @@ export const CATALOG_CLUBS: Club[] = (Object.keys(TRIBES) as PillarId[]).map((id
 
 export function inviteUrl(club: Club) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/'
-  return `${origin}${path}?join=${encodeURIComponent(club.inviteSlug)}`
+  return `${origin}/app?join=${encodeURIComponent(club.inviteSlug)}`
 }
 
 export async function shareInvite(club: Club) {

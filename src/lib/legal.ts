@@ -17,4 +17,24 @@ export const CONTACT_LINES = [
   { label: 'Email', value: 'hello@vuna.app', href: 'mailto:hello@vuna.app' },
   { label: 'WhatsApp', value: 'Chat the tribe desk', href: 'https://wa.me/254700000000?text=VUNA%20support' },
   { label: 'Where', value: 'Nairobi, Kenya · Africa/Nairobi' },
+  { label: 'Partners', value: 'Licensed CIS desks · Etica Capital MMF custody rail' },
+]
+
+export const PRIVACY_TITLE = 'Privacy and PII disclosures'
+export const PRIVACY_BODY = [
+  'VUNA is built for the Kenya Data Protection Act. We collect the least we need to run STK Push, Friday wrap, and tribe invites.',
+  'Safaricom MSISDNs are stored on the server as 254XXXXXXXXX inside an HttpOnly session cookie. This device keeps a mask only (2547****1234). Raw numbers are not written to logs, analytics, or Pulse copy.',
+  'The M-Pesa PIN is never typed in VUNA. It is entered on the Safaricom prompt. We do not ask for, store, or infer PINs.',
+  'Daraja Consumer Key, Consumer Secret, and Passkey live only on the server. They are never shipped in VITE_ bundles or this page.',
+  'Habit locks, wrap toggles, and card name live in local storage on this phone unless you connect a profile. Erasing the device clears local VUNA data. It does not reverse M-Pesa.',
+  'Questions on access or erasure: hello@vuna.app. Nairobi, Kenya.',
+]
+
+export const CMA_TITLE = 'CMA compliance notes'
+export const CMA_BODY = [
+  'VUNA is engineered for evaluation under the Capital Markets Authority Regulatory Sandbox Framework. It is not a CMA-licensed collective investment scheme, a bank, or a deposit-taking product.',
+  'Protocol lock is a behavioral commitment rail. Whole-shilling KES moves only after a Daraja callback (ResultCode 0) for a CheckoutRequestID we issued. Yield on the Harvest card is a display of verified consistency, not a promised return.',
+  'Where funds sit in a money market fund, custody is with a licensed CIS fund manager. Etica MMF is referenced as a Kenya money-market custody rail. Projected calculator yield uses a ~10% illustrative MMF rate and is not advice or a forecast.',
+  'M-Pesa collections use Safaricom Daraja. Callbacks are idempotent on CheckoutRequestID and MpesaReceiptNumber. Amount mismatches are not credited.',
+  'Partner and regulator desks: hello@vuna.app.',
 ]

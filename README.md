@@ -6,7 +6,8 @@ This prototype now includes a **server STK loop** for CMA / Daraja review. Witho
 
 ## Screens
 
-- **Harvest** — protocol balance, quick habit lock entry, atomic pillars (Fitness, Health, Habits, Lifestyle)
+- **Landing** (`/`) — desktop marketing page, PWA install, yield calculator, Friday wrap
+- **Harvest** (`/app`) — protocol balance, quick habit lock entry, atomic pillars (Fitness, Health, Habits, Lifestyle)
 - **Lock** — commitment index, General Wealth goal, estimated harvest, Vuna Transfer
 - **Pulse** — tribe activity feed, salutes, Vuna Gifts, leaderboard
 - **Profile** — name on the card, gift wallet, tribes (join, create, invite), WhatsApp, Friday wrap, Contact / Terms / Opt out
@@ -20,7 +21,7 @@ npm install
 npm run dev
 ```
 
-The Vite server binds to `http://127.0.0.1:43173` and serves `/api/*` (STK push, status, callback, Friday wrap cron).
+The Vite server binds to `http://127.0.0.1:43173`. `/` is the landing page. `/app` is the habit-lock dashboard and `/api/*` serves STK, session, and Friday wrap.
 
 Copy `.env.example` to `.env.local` and add Daraja sandbox keys when Safaricom issues them. Never put Consumer Key, Secret, or Passkey in `VITE_*` variables.
 
