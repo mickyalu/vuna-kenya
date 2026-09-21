@@ -13,11 +13,12 @@ import {
 } from '../lib/legal'
 import { formatKes } from '../lib/money'
 import { usePwaInstall } from '../lib/pwa'
-import { goApp } from '../lib/route'
+import { applyPendingLandingScroll, goApp, goLanding, goSection, isModifiedClick } from '../lib/route'
 import { later } from '../lib/runtime'
 import { MMF_ANNUAL_RATE, projectHabitYield } from '../lib/yield'
 import { KesAmount } from '../components/KesAmount'
 import { PersonAvatar } from '../components/PersonAvatar'
+import { VunaMark } from '../components/VunaMark'
 import { useYieldTick } from '../lib/useYieldTick'
 
 const PILLARS: PillarId[] = ['FITNESS', 'HEALTH', 'HABITS', 'LIFESTYLE']
@@ -91,7 +92,7 @@ const FAQ_ITEMS = [
 ] as const
 
 export function LandingPage() {
-  const { install, installed, hint } = usePwaInstall()
+  const { install, installed, hint, canPrompt } = usePwaInstall()
   const [legal, setLegal] = useState<LegalKey | null>(null)
   const [demoOpen, setDemoOpen] = useState(false)
   const [pillar, setPillar] = useState<PillarId>('FITNESS')
@@ -100,27 +101,83 @@ export function LandingPage() {
   const projection = useMemo(() => projectHabitYield(kes, freq), [kes, freq])
   const meta = PILLAR_CATALOG[pillar]
 
+  useEffect(() => {
+    applyPendingLandingScroll()
+  }, [])
+
+  const launchApp = () => goApp()
+  const launchStore = () => {
+    if (!installed && canPrompt) {
+      void install()
+      return
+    }
+    goApp()
+  }
+
   return (
     <div className="min-h-svh bg-[#0A0A0A] text-white">
       <header className="sticky top-0 z-40 border-b border-[#222222] bg-[#0A0A0A]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-3 px-5 py-3">
-          <a href="/" className="flex items-center gap-2" aria-label="VUNA home">
+          <a
+            href="/"
+            className="flex items-center gap-2"
+            aria-label="VUNA home"
+            onClick={(event) => {
+              event.preventDefault()
+              goLanding()
+            }}
+          >
             <VunaMark />
             <span className="font-display text-[28px] leading-none tracking-[0.16em]">VUNA</span>
           </a>
+          <nav className="hidden items-center gap-4 text-[12px] font-semibold tracking-[0.08em] text-[#888888] lg:flex">
+            <a href="#features" onClick={(event) => { event.preventDefault(); goSection('features') }}>
+              Features
+            </a>
+            <a href="#calculator" onClick={(event) => { event.preventDefault(); goSection('calculator') }}>
+              Calculator
+            </a>
+            <a href="#sessions" onClick={(event) => { event.preventDefault(); goSection('sessions') }}>
+              Sessions
+            </a>
+            <a href="#faq" onClick={(event) => { event.preventDefault(); goSection('faq') }}>
+              FAQ
+            </a>
+          </nav>
           <div className="flex items-center gap-2">
-            <p className="hidden text-[11px] font-semibold tracking-[0.14em] text-[#888888] sm:block">
+            <p className="hidden text-[11px] font-semibold tracking-[0.14em] text-[#888888] xl:block">
               CMA SANDBOX · KENYA
             </p>
             <button
               type="button"
-              onClick={() => goApp()}
+              onClick={launchApp}
+              className="hidden rounded-full border border-[#222222] px-3 py-2 text-[13px] font-semibold text-white sm:inline-flex"
+            >
+              Try VUNA
+            </button>
+            <button
+              type="button"
+              onClick={launchApp}
               className="rounded-full bg-[#CCFF00] px-4 py-2 text-[13px] font-semibold text-black"
             >
               Launch Web App ➔
             </button>
           </div>
         </div>
+        <nav className="no-scrollbar mx-auto flex max-w-[1120px] gap-4 overflow-x-auto px-5 pb-2.5 text-[12px] font-semibold tracking-[0.08em] text-[#888888] lg:hidden">
+          <a href="#features" onClick={(event) => { event.preventDefault(); goSection('features') }}>
+            Features
+          </a>
+          <a href="#calculator" onClick={(event) => { event.preventDefault(); goSection('calculator') }}>
+            Calculator
+          </a>
+          <a href="#sessions" onClick={(event) => { event.preventDefault(); goSection('sessions') }}>
+            Sessions
+          </a>
+          <a href="#faq" onClick={(event) => { event.preventDefault(); goSection('faq') }}>
+            FAQ
+          </a>
+        </nav>
       </header>
 
       <main>
@@ -140,7 +197,7 @@ export function LandingPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => goApp()}
+                onClick={launchApp}
                 className="rounded-full bg-[#CCFF00] px-6 py-3.5 text-[15px] font-semibold text-black"
               >
                 Launch Web App ➔
@@ -159,8 +216,8 @@ export function LandingPage() {
               </p>
             ) : null}
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <AppStoreBadge onClick={() => goApp()} />
-              <GooglePlayBadge onClick={() => goApp()} />
+              <AppStoreBadge onClick={launchStore} />
+              <GooglePlayBadge onClick={launchStore} />
             </div>
           </div>
           <PhoneFrame>
@@ -168,7 +225,7 @@ export function LandingPage() {
           </PhoneFrame>
         </section>
 
-        <section className="border-y border-[#222222] bg-[#121212]">
+        <section id="features" className="scroll-mt-24 border-y border-[#222222] bg-[#121212]">
           <div className="mx-auto max-w-[1120px] px-5 py-10">
             <p className="text-center text-[12px] font-semibold tracking-[0.18em] text-[#CCFF00]">
               BUILT FOR SECURITY &amp; SPEED
@@ -216,7 +273,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-[#222222] bg-[#121212]">
+        <section id="calculator" className="scroll-mt-24 border-y border-[#222222] bg-[#121212]">
           <div className="mx-auto max-w-[1120px] px-5 py-16">
             <h2 className="font-display text-[40px] leading-none sm:text-[52px]">
               CALCULATE YOUR BEHAVIORAL YIELD
@@ -343,7 +400,7 @@ export function LandingPage() {
             </p>
             <button
               type="button"
-              onClick={() => goApp()}
+              onClick={launchApp}
               className="mt-8 rounded-full bg-[#CCFF00] px-10 py-4 text-[18px] font-semibold text-black"
             >
               Launch VUNA App ➔
@@ -385,7 +442,7 @@ export function LandingPage() {
 
 function SessionsBanner({ onWatch }: { onWatch: () => void }) {
   return (
-    <section className="bg-[#121212]">
+    <section id="sessions" className="scroll-mt-24 bg-[#121212]">
       <div className="mx-auto max-w-[1120px] px-5 py-10 lg:py-14">
         <div className="relative isolate min-h-[360px] overflow-hidden rounded-[28px] border border-[#1f1f1f] lg:min-h-[440px]">
           <div className="absolute inset-0 bg-[#0A0A0A]" />
@@ -524,7 +581,7 @@ function FaqSection() {
   const [open, setOpen] = useState<number | null>(null)
 
   return (
-    <section className="mx-auto max-w-[800px] px-5 py-16">
+    <section id="faq" className="mx-auto max-w-[800px] scroll-mt-24 px-5 py-16">
       <p className="text-[12px] font-semibold tracking-[0.18em] text-[#CCFF00]">FAQ</p>
       <h2 className="font-display mt-2 text-[40px] leading-none sm:text-[52px]">FREQUENTLY ASKED QUESTIONS</h2>
       <p className="mt-3 max-w-2xl text-[15px] text-[#888888]">
@@ -637,7 +694,16 @@ function StatusCluster() {
 
 function AppStoreBadge({ onClick }: { onClick: () => void }) {
   return (
-    <a href="/app" onClick={(e) => { e.preventDefault(); onClick() }} aria-label="Download on the App Store" className="block">
+    <a
+      href="/app"
+      onClick={(event) => {
+        if (isModifiedClick(event)) return
+        event.preventDefault()
+        onClick()
+      }}
+      aria-label="Download on the App Store"
+      className="block"
+    >
       <svg width="148" height="44" viewBox="0 0 148 44" xmlns="http://www.w3.org/2000/svg">
         <rect width="148" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
         <path
@@ -657,7 +723,16 @@ function AppStoreBadge({ onClick }: { onClick: () => void }) {
 
 function GooglePlayBadge({ onClick }: { onClick: () => void }) {
   return (
-    <a href="/app" onClick={(e) => { e.preventDefault(); onClick() }} aria-label="Get it on Google Play" className="block">
+    <a
+      href="/app"
+      onClick={(event) => {
+        if (isModifiedClick(event)) return
+        event.preventDefault()
+        onClick()
+      }}
+      aria-label="Get it on Google Play"
+      className="block"
+    >
       <svg width="156" height="44" viewBox="0 0 156 44" xmlns="http://www.w3.org/2000/svg">
         <rect width="156" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
         <polygon fill="#34A853" points="16.2,12.2 16.2,31.8 27.1,22" />
@@ -838,12 +913,3 @@ function LegalOverlay({ page, onClose }: { page: LegalKey; onClose: () => void }
   )
 }
 
-function VunaMark() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" className="h-8 w-8" aria-hidden>
-      <rect width="32" height="32" rx="8" fill="#121212" stroke="#222222" />
-      <path d="M8 22c2-6 4.5-10 8-14 3.5 4 6 8 8 14" stroke="#CCFF00" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M16 8v14" stroke="#CCFF00" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
-  )
-}

@@ -24,21 +24,12 @@ export function every(fn: () => void, ms: number): () => void {
   return () => globalThis.clearInterval(id)
 }
 
-/** Safaricom Mini App / webview back. */
+/** Safaricom Mini App / webview back. Does not trap browser popstate. */
 export function onHardwareBack(handler: () => boolean): () => void {
   const w = safeWindow()
   const d = safeDocument()
   if (!w) return () => {}
 
-  const onPop = () => {
-    if (handler()) {
-      try {
-        w.history.pushState({ vuna: 1 }, '')
-      } catch {
-        /* embedded webview */
-      }
-    }
-  }
   const onBackButton = (event: Event) => {
     if (handler()) {
       event.preventDefault()
@@ -52,16 +43,9 @@ export function onHardwareBack(handler: () => boolean): () => void {
     }
   }
 
-  try {
-    w.history.pushState({ vuna: 1 }, '')
-  } catch {
-    /* ignore */
-  }
-  w.addEventListener('popstate', onPop)
   w.addEventListener('message', onMessage)
   d?.addEventListener('backbutton', onBackButton)
   return () => {
-    w.removeEventListener('popstate', onPop)
     w.removeEventListener('message', onMessage)
     d?.removeEventListener('backbutton', onBackButton)
   }

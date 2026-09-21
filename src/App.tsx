@@ -15,9 +15,18 @@ import { HarvestTab } from './components/HarvestTab'
 import { LockTab } from './components/LockTab'
 import { ProfileTab } from './components/ProfileTab'
 import { PulseTab } from './components/PulseTab'
+import { VunaMark } from './components/VunaMark'
 import { VunaProvider, useVuna } from './store/VunaContext'
 import { later, onHardwareBack } from './lib/runtime'
-import { useVunaRoute } from './lib/route'
+import { usePwaInstall } from './lib/pwa'
+import {
+  goLanding,
+  markAppEntered,
+  releaseScrollLock,
+  shouldSkipAppSplash,
+  syncViewport,
+  useVunaRoute,
+} from './lib/route'
 import { LandingPage } from './pages/LandingPage'
 
 const SPLASH_HOLD_MS = 2200
@@ -30,18 +39,62 @@ function splashRemaining() {
   return Math.max(0, SPLASH_HOLD_MS - (Date.now() - splashBootAt))
 }
 
+function AppChromeHeader() {
+  const { install, installed } = usePwaInstall()
+
+  return (
+    <header className="shrink-0 border-b border-[#222222] bg-[#0A0A0A]/95 backdrop-blur">
+      <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-2 px-3 py-2 sm:px-5">
+        <button
+          type="button"
+          onClick={() => goLanding()}
+          className="flex min-w-0 items-center gap-2 text-left"
+          aria-label="Back to Main Site"
+        >
+          <VunaMark className="h-7 w-7 shrink-0" />
+          <span className="truncate text-[12px] font-semibold text-white sm:text-[13px]">
+            ← Back to Main Site
+          </span>
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {installed ? (
+            <span className="rounded-full border border-[#CCFF00]/45 px-2.5 py-1 text-[11px] font-semibold text-[#CCFF00]">
+              PWA Installed
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void install()}
+              className="rounded-full bg-[#CCFF00] px-2.5 py-1 text-[11px] font-semibold text-black"
+            >
+              Install App
+            </button>
+          )}
+          <NoticeBell />
+        </div>
+      </div>
+    </header>
+  )
+}
+
 function Shell() {
   const { tab, handleBack, profileEditOpen } = useVuna()
 
-  useEffect(() => onHardwareBack(handleBack), [handleBack])
+  useEffect(
+    () =>
+      onHardwareBack(() => {
+        if (handleBack()) return true
+        goLanding()
+        return true
+      }),
+    [handleBack],
+  )
 
   return (
-    <div className="min-h-svh bg-vuna-bg">
-      <div className="mx-auto flex min-h-svh w-full max-w-[430px] flex-col bg-vuna-bg">
-        <div className="flex items-center justify-end px-4 pt-3">
-          <NoticeBell />
-        </div>
-        <main className="no-scrollbar flex-1 overflow-y-auto px-4 pb-28 pt-2">
+    <div className="flex h-svh max-h-svh flex-col overflow-hidden bg-vuna-bg">
+      <AppChromeHeader />
+      <div className="mx-auto flex min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden bg-vuna-bg">
+        <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-2">
           {tab === 'harvest' ? <HarvestTab /> : null}
           {tab === 'lock' ? <LockTab /> : null}
           {tab === 'pulse' ? <PulseTab /> : null}
@@ -62,17 +115,24 @@ function Shell() {
 }
 
 function VunaDashboardApp() {
-  const [loading, setLoading] = useState(true)
-  const [splashMounted, setSplashMounted] = useState(true)
+  const [skipSplash] = useState(() => shouldSkipAppSplash())
+  const [loading, setLoading] = useState(() => !skipSplash)
+  const [splashMounted, setSplashMounted] = useState(() => !skipSplash)
 
   useEffect(() => {
-    return later(() => setLoading(false), splashRemaining())
+    markAppEntered()
   }, [])
 
   useEffect(() => {
+    if (skipSplash) return
+    return later(() => setLoading(false), splashRemaining())
+  }, [skipSplash])
+
+  useEffect(() => {
     if (loading) return
+    if (!splashMounted) return
     return later(() => setSplashMounted(false), SPLASH_FADE_MS)
-  }, [loading])
+  }, [loading, splashMounted])
 
   return (
     <>
@@ -86,6 +146,11 @@ function VunaDashboardApp() {
 
 export default function App() {
   const route = useVunaRoute()
+
+  useEffect(() => {
+    syncViewport(route)
+    return () => releaseScrollLock()
+  }, [route])
 
   return (
     <ErrorBoundary>

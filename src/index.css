@@ -14,12 +14,32 @@
   --font-amount: 'M PLUS Rounded 1c', 'Nunito', sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body,
 #root {
   min-height: 100svh;
   background: #0a0a0a;
   color: #ffffff;
+}
+
+html.vuna-landing,
+html.vuna-landing body,
+html.vuna-landing #root {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html.vuna-app,
+html.vuna-app body,
+html.vuna-app #root {
+  height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
 }
 
 body {
