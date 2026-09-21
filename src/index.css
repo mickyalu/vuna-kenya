@@ -134,3 +134,17 @@ input[type='range'].vuna-range::-moz-range-thumb {
   cursor: pointer;
   border-radius: 0;
 }
+
+@keyframes vuna-sessions-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-10px, 8px, 0);
+  }
+}
+
+.vuna-sessions-glow {
+  animation: vuna-sessions-drift 16s ease-in-out infinite;
+}

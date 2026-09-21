@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Check, Smartphone, X } from 'lucide-react'
+import { Check, Minus, Plus, Smartphone, X } from 'lucide-react'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
 import {
   CMA_BODY,
@@ -64,9 +64,36 @@ const VUNA_DIFF = [
   'Verified community streaks with your tribe',
 ]
 
+const DEMO_YOUTUBE_ID = 'PNA67Cmcm_o'
+const DEMO_YOUTUBE_WATCH = `https://www.youtube.com/watch?v=${DEMO_YOUTUBE_ID}`
+
+const FAQ_ITEMS = [
+  {
+    q: 'How does VUNA make money on my savings?',
+    a: 'Your micro-deposits are routed via M-Pesa into licensed Money Market Funds (MMFs). You earn daily compound interest (~10%+ net p.a.) directly on your balance.',
+  },
+  {
+    q: 'Is my money safe and regulated in Kenya?',
+    a: 'Yes. VUNA works alongside licensed Capital Markets Authority (CMA) fund managers and custodians. Your capital sits in regulated investment accounts, not on an unverified balance sheet.',
+  },
+  {
+    q: 'How does the habit-triggered STK Push work?',
+    a: 'When you log an atomic habit (e.g., fitness workout or learning goal), VUNA triggers a secure M-Pesa STK Push directly to your phone for the exact KES amount you chose to lock away.',
+  },
+  {
+    q: 'Can I withdraw my funds anytime?',
+    a: 'Yes! You can initiate withdrawals back to your registered M-Pesa mobile line directly through the VUNA app dashboard.',
+  },
+  {
+    q: 'What is the Friday 18:00 Wrap?',
+    a: 'It is an automated weekly WhatsApp scorecard sent every Friday evening to show your total micro-saved KES, active streaks, and habit consistency before the weekend starts.',
+  },
+] as const
+
 export function LandingPage() {
   const { install, installed, hint } = usePwaInstall()
   const [legal, setLegal] = useState<LegalKey | null>(null)
+  const [demoOpen, setDemoOpen] = useState(false)
   const [pillar, setPillar] = useState<PillarId>('FITNESS')
   const [kes, setKes] = useState(100)
   const [freq, setFreq] = useState(3)
@@ -284,6 +311,8 @@ export function LandingPage() {
           </div>
         </section>
 
+        <SessionsBanner onWatch={() => setDemoOpen(true)} />
+
         <section className="mx-auto grid max-w-[1120px] items-center gap-10 px-5 py-16 lg:grid-cols-2">
           <div>
             <p className="text-[12px] font-semibold tracking-[0.18em] text-[#CCFF00]">FRIDAY 18:00 EAT</p>
@@ -301,6 +330,8 @@ export function LandingPage() {
           </div>
           <WhatsAppFrame />
         </section>
+
+        <FaqSection />
 
         <section className="border-t border-[#222222] bg-[#121212]">
           <div className="mx-auto max-w-[720px] px-5 py-16 text-center">
@@ -341,6 +372,7 @@ export function LandingPage() {
         </div>
       </footer>
 
+      {demoOpen ? <DemoModal onClose={() => setDemoOpen(false)} /> : null}
       {legal ? (
         <LegalOverlay
           page={legal}
@@ -348,6 +380,192 @@ export function LandingPage() {
         />
       ) : null}
     </div>
+  )
+}
+
+function SessionsBanner({ onWatch }: { onWatch: () => void }) {
+  return (
+    <section className="bg-[#121212]">
+      <div className="mx-auto max-w-[1120px] px-5 py-10 lg:py-14">
+        <div className="relative isolate min-h-[360px] overflow-hidden rounded-[28px] border border-[#1f1f1f] lg:min-h-[440px]">
+          <div className="absolute inset-0 bg-[#0A0A0A]" />
+          <div className="vuna-sessions-glow absolute -right-28 -top-32 h-[540px] w-[540px] rounded-full bg-[#CCFF00]/25 blur-3xl" />
+          <div className="absolute right-[4%] top-[6%] h-[300px] w-[520px] rotate-[-22deg] rounded-[120px] bg-gradient-to-r from-[#CCFF00]/80 via-[#3DD68C]/35 to-transparent blur-[6px]" />
+          <div className="absolute bottom-[-20%] right-[-8%] h-[280px] w-[380px] rounded-full bg-[#1a2a08]/80 blur-2xl" />
+          <SessionsArtwork />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/78 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="relative z-10 flex min-h-[360px] flex-col justify-between p-6 sm:p-10 lg:min-h-[440px] lg:p-14">
+            <div className="max-w-xl">
+              <p className="text-[12px] font-semibold tracking-[0.2em] text-[#CCFF00]">PRODUCT KEYNOTE</p>
+              <h2 className="mt-3 text-[34px] font-semibold leading-[1.05] tracking-tight text-white sm:text-[46px] lg:text-[54px]">
+                Building the Behavioral Infrastructure for Retail Wealth.
+              </h2>
+              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/75">
+                Watch how VUNA turns daily discipline into real Money Market Fund compounding via
+                M-Pesa.
+              </p>
+              <button
+                type="button"
+                onClick={onWatch}
+                className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3.5 text-[15px] font-semibold text-black transition-colors hover:bg-[#CCFF00]"
+              >
+                Watch Demo Video ▶
+              </button>
+            </div>
+            <p className="mt-12 self-end font-display text-[26px] tracking-[0.1em] text-white sm:text-[32px]">
+              vuna sessions 2026
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SessionsArtwork() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-y-0 right-[-8%] hidden h-full w-[64%] sm:block"
+      viewBox="0 0 640 520"
+      fill="none"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="vuna-ribbon" x1="40" y1="40" x2="620" y2="380" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#CCFF00" stopOpacity="0.95" />
+          <stop offset="0.45" stopColor="#7CFF6B" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#3DD68C" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M80 90c90 10 150-40 250-20 90 18 140 90 230 80"
+        stroke="url(#vuna-ribbon)"
+        strokeWidth="90"
+        strokeLinecap="round"
+      />
+      <ellipse cx="430" cy="455" rx="170" ry="18" fill="#000" opacity="0.55" />
+      <g fill="#050505">
+        <circle cx="430" cy="168" r="28" />
+        <path d="M404 200c8-10 48-10 56 0 10 14 18 48 10 92-4 22-18 28-38 28s-34-6-38-28c-8-44 0-78 10-92z" />
+        <path d="M392 318c6 8 22 16 38 16s32-8 38-16c8 46 10 86 4 118-28 6-56 6-84 0-6-32-4-72 4-118z" />
+        <path d="M390 232c-22 18-38 8-52-4 6 40 18 62 34 78 10-18 16-42 18-74z" />
+        <path d="M474 232c22 18 38 8 52-4-6 40-18 62-34 78-10-18-16-42-18-74z" />
+      </g>
+      <g fill="#0A0A0A" opacity="0.85">
+        <ellipse cx="220" cy="500" rx="42" ry="28" />
+        <ellipse cx="290" cy="508" rx="36" ry="22" />
+        <ellipse cx="360" cy="512" rx="40" ry="20" />
+        <ellipse cx="500" cy="508" rx="38" ry="22" />
+        <ellipse cx="570" cy="500" rx="34" ry="24" />
+      </g>
+    </svg>
+  )
+}
+
+function DemoModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <button type="button" className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close demo video" />
+      <div className="relative z-10 w-full max-w-[920px] overflow-hidden rounded-[22px] border border-[#222222] bg-[#0A0A0A] shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[#222222] px-4 py-3">
+          <div>
+            <p className="text-[12px] font-semibold tracking-[0.16em] text-[#CCFF00]">VUNA SESSIONS 2026</p>
+            <p className="mt-0.5 text-[14px] font-semibold text-white">Product keynote</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={DEMO_YOUTUBE_WATCH}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-[#222222] px-3 py-1.5 text-[12px] font-semibold text-white hover:border-[#CCFF00] hover:text-[#CCFF00]"
+            >
+              Open on YouTube
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A1A1A] text-[#888888]"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="relative aspect-video w-full bg-black">
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src={`https://www.youtube-nocookie.com/embed/${DEMO_YOUTUBE_ID}?autoplay=1&rel=0`}
+            title="VUNA Sessions 2026 product keynote"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null)
+
+  return (
+    <section className="mx-auto max-w-[800px] px-5 py-16">
+      <p className="text-[12px] font-semibold tracking-[0.18em] text-[#CCFF00]">FAQ</p>
+      <h2 className="font-display mt-2 text-[40px] leading-none sm:text-[52px]">FREQUENTLY ASKED QUESTIONS</h2>
+      <p className="mt-3 max-w-2xl text-[15px] text-[#888888]">
+        Regulation, M-Pesa STK, and what happens to every shilling you lock.
+      </p>
+      <div className="mt-8 space-y-3">
+        {FAQ_ITEMS.map((item, index) => {
+          const expanded = open === index
+          return (
+            <article key={item.q} className="rounded-[22px] border border-[#222222] bg-[#121212]">
+              <h3>
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={`faq-panel-${index}`}
+                  id={`faq-button-${index}`}
+                  onClick={() => setOpen(expanded ? null : index)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left"
+                >
+                  <span className="text-[16px] font-semibold leading-snug text-white sm:text-[18px]">{item.q}</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1A1A1A] text-[#CCFF00] transition-transform duration-300">
+                    {expanded ? <Minus size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
+                  </span>
+                </button>
+              </h3>
+              <div
+                id={`faq-panel-${index}`}
+                role="region"
+                aria-labelledby={`faq-button-${index}`}
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <p className="px-5 pb-5 text-[14px] leading-relaxed text-[#888888]">{item.a}</p>
+                </div>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
