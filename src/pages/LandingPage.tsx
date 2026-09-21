@@ -557,7 +557,7 @@ function FaqSection() {
                   expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                 }`}
               >
-                <div className="overflow-hidden">
+                <div className="min-h-0 overflow-hidden">
                   <p className="px-5 pb-5 text-[14px] leading-relaxed text-[#888888]">{item.a}</p>
                 </div>
               </div>
