@@ -83,7 +83,7 @@ export function EditProfileSheet() {
             />
           </label>
           <label className="block">
-            <span className="block text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+            <span className="block text-[11px] font-semibold tracking-[0.12em] text-vuna-muted">
               INITIAL
             </span>
             <input
