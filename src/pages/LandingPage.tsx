@@ -12,7 +12,6 @@ import {
   TERMS_TITLE,
 } from '../lib/legal'
 import { formatKes } from '../lib/money'
-import { usePwaInstall } from '../lib/pwa'
 import { applyPendingLandingScroll, goApp, goLanding, goSection, isModifiedClick } from '../lib/route'
 import { later } from '../lib/runtime'
 import { MMF_ANNUAL_RATE, projectHabitYield } from '../lib/yield'
@@ -92,7 +91,6 @@ const FAQ_ITEMS = [
 ] as const
 
 export function LandingPage() {
-  const { install, installed, hint, canPrompt } = usePwaInstall()
   const [legal, setLegal] = useState<LegalKey | null>(null)
   const [demoOpen, setDemoOpen] = useState(false)
   const [pillar, setPillar] = useState<PillarId>('FITNESS')
@@ -106,13 +104,6 @@ export function LandingPage() {
   }, [])
 
   const launchApp = () => goApp()
-  const launchStore = () => {
-    if (!installed && canPrompt) {
-      void install()
-      return
-    }
-    goApp()
-  }
 
   return (
     <div className="min-h-svh bg-[#0A0A0A] text-white">
@@ -190,34 +181,20 @@ export function LandingPage() {
               WEALTH IS A BEHAVIOR, NOT A LUCK DRAW.
             </h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-[#888888]">
-              Turn your everyday wins into high-yield wealth. VUNA automatically invests small
+              Turn your everyday wins into high-yield wealth. VUNA automatically invests
               micro-deposits into Money Market Funds every time you log a healthy habit—earning daily
               interest straight from M-Pesa.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={launchApp}
-                className="rounded-full bg-[#CCFF00] px-6 py-3.5 text-[15px] font-semibold text-black"
-              >
-                Launch Web App ➔
-              </button>
-              <button
-                type="button"
-                onClick={() => (installed ? goApp() : void install())}
-                className="rounded-full border border-[#222222] bg-[#121212] px-6 py-3.5 text-[15px] font-semibold text-white"
-              >
-                {installed ? 'Open installed app' : 'Install PWA'}
-              </button>
-            </div>
-            {hint ? (
-              <p className="mt-3 text-[13px] text-[#888888]" role="status">
-                {hint}
-              </p>
-            ) : null}
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <AppStoreBadge onClick={launchStore} />
-              <GooglePlayBadge onClick={launchStore} />
+            <button
+              type="button"
+              onClick={launchApp}
+              className="mt-8 rounded-full bg-[#CCFF00] px-6 py-3.5 text-[15px] font-semibold text-black"
+            >
+              Launch Web App ➔
+            </button>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <AppStoreBadge onClick={launchApp} />
+              <GooglePlayBadge onClick={launchApp} />
             </div>
           </div>
           <PhoneFrame>
@@ -751,7 +728,7 @@ function GooglePlayBadge({ onClick }: { onClick: () => void }) {
 }
 
 function HarvestPreview() {
-  const tick = useYieldTick(0.1641, 0.0003, 1200, true)
+  const tick = useYieldTick(0.1698, 0.0003, 1200, true)
   const [stk, setStk] = useState<'idle' | 'pending' | 'locked'>('idle')
 
   useEffect(() => {
@@ -760,8 +737,8 @@ function HarvestPreview() {
   }, [stk])
 
   return (
-    <div>
-      <p className="mb-2 flex items-center justify-between px-1">
+    <div className="space-y-2">
+      <p className="flex items-center justify-between px-1">
         <span className="text-[10px] font-semibold tracking-[0.16em] text-[#555555]">HARVEST</span>
         <span className="text-[10px] font-semibold text-[#CCFF00]">LIVE</span>
       </p>
@@ -769,12 +746,10 @@ function HarvestPreview() {
         className="relative overflow-hidden rounded-[18px] border border-[#3d4f00] px-3 pb-3 pt-3"
         style={{ background: 'linear-gradient(135deg, #243600 0%, #1a2a12 42%, #12180c 100%)' }}
       >
-        <p className="text-[10px] font-semibold tracking-[0.22em] text-[#c8e67a]">KES BALANCE</p>
-        <p className="mt-2">
-          <KesAmount value={2400} className="text-[30px] leading-none" />
-        </p>
-        <p className="mt-2 text-[11px] tracking-[0.12em] text-[#9aaa88]">
-          FOR: <span className="font-semibold text-white">GENERAL WEALTH</span>
+        <p className="text-[10px] font-semibold tracking-[0.18em] text-[#c8e67a]">LIFESTYLE</p>
+        <p className="mt-2 text-[10px] font-semibold tracking-[0.22em] text-[#c8e67a]">KES BALANCE</p>
+        <p className="mt-1">
+          <KesAmount value={2400} className="text-[28px] leading-none" />
         </p>
         <p className="mt-3 text-[11px] font-medium text-[#3DD68C]">
           +<KesAmount value={tick} digits={4} tone="mint" className="text-[11px] font-medium" /> Yield
@@ -788,24 +763,23 @@ function HarvestPreview() {
           <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">KES RAIL</p>
         </div>
       </section>
-      <article className="mt-2 rounded-[18px] border border-[#222222] bg-[#121212] px-3 py-3">
-        <p className="text-[10px] font-semibold tracking-[0.16em] text-[#888888]">STK PUSH</p>
-        <p className="mt-1 text-[14px] font-semibold text-white">05:00 run · FITNESS</p>
-        <p className="mt-0.5 font-amount text-[20px] text-white">KES 100</p>
-        <button
-          type="button"
-          onClick={() => setStk('pending')}
-          disabled={stk !== 'idle'}
-          className="mt-2 w-full rounded-full bg-[#CCFF00] py-2.5 text-[13px] font-semibold text-black disabled:opacity-70"
-        >
-          {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
-        </button>
-        {stk === 'locked' ? (
-          <p className="mt-2 flex items-center gap-1 text-[11px] text-[#3DD68C]">
-            <Check size={13} /> M-Pesa confirmed. Your habit is earning.
-          </p>
-        ) : null}
+      <article className="rounded-[18px] border border-[#CCFF00] bg-[#121212] px-3 py-3">
+        <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">FITNESS</p>
+        <p className="mt-1 text-[14px] font-semibold text-white">05:00 run · KES 100</p>
       </article>
+      <button
+        type="button"
+        onClick={() => setStk('pending')}
+        disabled={stk !== 'idle'}
+        className="w-full rounded-full bg-[#CCFF00] py-2.5 text-[13px] font-semibold text-black disabled:opacity-70"
+      >
+        {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
+      </button>
+      {stk === 'locked' ? (
+        <p className="flex items-center gap-1 px-1 text-[11px] text-[#3DD68C]">
+          <Check size={13} /> M-Pesa confirmed. Your habit is earning.
+        </p>
+      ) : null}
     </div>
   )
 }
