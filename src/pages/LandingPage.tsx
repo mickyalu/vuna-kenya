@@ -425,7 +425,7 @@ function WhatsAppFrame() {
           <p className="text-[11px] text-[#888888]">Friday 18:00 · WhatsApp</p>
         </div>
       </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-[#121212] px-3 py-3 font-mono text-[11px] leading-relaxed text-[#E8E8E8]">
+      <pre className="overflow-x-auto whitespace-pre rounded-2xl bg-[#121212] px-3 py-3 font-mono text-[10px] leading-[1.45] text-[#E8E8E8]">
         {SAMPLE_WRAP}
       </pre>
     </div>
