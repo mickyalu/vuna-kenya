@@ -18,6 +18,7 @@ function json(data: unknown, status = 200, extra?: Record<string, string>) {
   const headers = new Headers(extra)
   headers.set('Content-Type', 'application/json')
   headers.set('Cache-Control', 'no-store')
+  headers.set('X-Content-Type-Options', 'nosniff')
   return new Response(JSON.stringify(data), { status, headers })
 }
 

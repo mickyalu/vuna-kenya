@@ -12,7 +12,7 @@ import {
   TERMS_TITLE,
 } from '../lib/legal'
 import { formatKes } from '../lib/money'
-import { applyPendingLandingScroll, goApp, goLanding, goSection, isModifiedClick } from '../lib/route'
+import { applyPendingLandingScroll, goApp, goLanding, goSection } from '../lib/route'
 import { later } from '../lib/runtime'
 import { MMF_ANNUAL_RATE, projectHabitYield } from '../lib/yield'
 import { KesAmount } from '../components/KesAmount'
@@ -93,6 +93,7 @@ const FAQ_ITEMS = [
 export function LandingPage() {
   const [legal, setLegal] = useState<LegalKey | null>(null)
   const [demoOpen, setDemoOpen] = useState(false)
+  const [storeNote, setStoreNote] = useState<string | null>(null)
   const [pillar, setPillar] = useState<PillarId>('FITNESS')
   const [kes, setKes] = useState(100)
   const [freq, setFreq] = useState(3)
@@ -142,16 +143,9 @@ export function LandingPage() {
             <button
               type="button"
               onClick={launchApp}
-              className="hidden rounded-full border border-[#222222] px-3 py-2 text-[13px] font-semibold text-white sm:inline-flex"
+              className="rounded-full bg-[#CCFF00] px-5 py-2.5 text-[14px] font-semibold text-black sm:px-6 sm:text-[15px]"
             >
-              Try VUNA
-            </button>
-            <button
-              type="button"
-              onClick={launchApp}
-              className="rounded-full bg-[#CCFF00] px-4 py-2 text-[13px] font-semibold text-black"
-            >
-              Launch Web App ➔
+              Try Vuna
             </button>
           </div>
         </div>
@@ -185,17 +179,27 @@ export function LandingPage() {
               micro-deposits into Money Market Funds every time you log a healthy habit—earning daily
               interest straight from M-Pesa.
             </p>
-            <button
-              type="button"
-              onClick={launchApp}
-              className="mt-8 rounded-full bg-[#CCFF00] px-6 py-3.5 text-[15px] font-semibold text-black"
-            >
-              Launch Web App ➔
-            </button>
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <AppStoreBadge onClick={launchApp} />
-              <GooglePlayBadge onClick={launchApp} />
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <AppStoreBadge
+                onClick={() =>
+                  setStoreNote('The App Store listing is coming soon. Use Try Vuna for CMA sandbox access.')
+                }
+              />
+              <GooglePlayBadge
+                onClick={() =>
+                  setStoreNote('The Google Play listing is coming soon. Use Try Vuna for CMA sandbox access.')
+                }
+              />
             </div>
+            {storeNote ? (
+              <p className="mt-3 text-[13px] text-[#CCFF00]" role="status">
+                {storeNote}
+              </p>
+            ) : (
+              <p className="mt-3 text-[13px] text-[#888888]">
+                iOS and Android listings coming soon. CMA sandbox testers use Try Vuna.
+              </p>
+            )}
           </div>
           <PhoneFrame>
             <HarvestPreview />
@@ -373,14 +377,15 @@ export function LandingPage() {
               START BUILDING DISCIPLINE-BACKED WEALTH TODAY.
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-[15px] text-[#888888]">
-              Launch the web app, log a habit, approve the STK. The first lock is a whole shilling.
+              CMA sandbox testers: open Try Vuna, log a habit, and approve the M-Pesa STK. The first
+              lock is a whole shilling.
             </p>
             <button
               type="button"
               onClick={launchApp}
               className="mt-8 rounded-full bg-[#CCFF00] px-10 py-4 text-[18px] font-semibold text-black"
             >
-              Launch VUNA App ➔
+              Try Vuna
             </button>
           </div>
         </section>
@@ -671,16 +676,15 @@ function StatusCluster() {
 
 function AppStoreBadge({ onClick }: { onClick: () => void }) {
   return (
-    <a
-      href="/app"
-      onClick={(event) => {
-        if (isModifiedClick(event)) return
-        event.preventDefault()
-        onClick()
-      }}
-      aria-label="Download on the App Store"
-      className="block"
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Download on the App Store, coming soon"
+      className="relative block"
     >
+      <span className="absolute -right-1 -top-2 z-10 rounded-full bg-[#CCFF00] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-black">
+        Coming soon
+      </span>
       <svg width="148" height="44" viewBox="0 0 148 44" xmlns="http://www.w3.org/2000/svg">
         <rect width="148" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
         <path
@@ -694,22 +698,21 @@ function AppStoreBadge({ onClick }: { onClick: () => void }) {
           App Store
         </text>
       </svg>
-    </a>
+    </button>
   )
 }
 
 function GooglePlayBadge({ onClick }: { onClick: () => void }) {
   return (
-    <a
-      href="/app"
-      onClick={(event) => {
-        if (isModifiedClick(event)) return
-        event.preventDefault()
-        onClick()
-      }}
-      aria-label="Get it on Google Play"
-      className="block"
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Get it on Google Play, coming soon"
+      className="relative block"
     >
+      <span className="absolute -right-1 -top-2 z-10 rounded-full bg-[#CCFF00] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-black">
+        Coming soon
+      </span>
       <svg width="156" height="44" viewBox="0 0 156 44" xmlns="http://www.w3.org/2000/svg">
         <rect width="156" height="44" rx="8" fill="#000" stroke="#8e8e8e" />
         <polygon fill="#34A853" points="16.2,12.2 16.2,31.8 27.1,22" />
@@ -723,7 +726,7 @@ function GooglePlayBadge({ onClick }: { onClick: () => void }) {
           Google Play
         </text>
       </svg>
-    </a>
+    </button>
   )
 }
 

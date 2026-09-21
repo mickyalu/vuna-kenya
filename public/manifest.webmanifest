@@ -1,6 +1,6 @@
 {
-  "name": "VUNA",
-  "short_name": "VUNA",
+  "name": "Vuna",
+  "short_name": "Vuna",
   "description": "Automate micro-investments into regulated Kenyan MMFs every time you log a habit.",
   "start_url": "/app",
   "scope": "/",
