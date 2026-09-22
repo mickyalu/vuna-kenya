@@ -25,7 +25,22 @@ The Vite server binds to `http://127.0.0.1:43173`. `/` is the landing page. `/ap
 
 Copy `.env.example` to `.env.local` and add Daraja sandbox keys when Safaricom issues them. Never put Consumer Key, Secret, or Passkey in `VITE_*` variables.
 
-Friday 18:00 EAT wrap: Vercel Cron hits `GET /api/cron/friday-wrap` on `0 15 * * 5` (15:00 UTC). Set `CRON_SECRET`. Recipients come from Supabase `profiles` where `friday_wrap_enabled = true`, or from the local wrap store when Supabase is unset. WhatsApp is mocked until `WHATSAPP_API_URL` and `WHATSAPP_API_TOKEN` are set. Schema: `supabase/migrations/001_profiles_friday_wrap.sql`.
+Friday 18:00 EAT wrap: Vercel Cron hits `GET /api/cron/friday-wrap` on `0 15 * * 5` (15:00 UTC). Set `CRON_SECRET`. Recipients come from Supabase `profiles` where `friday_wrap_enabled = true`, or from the local wrap store when Supabase is unset. WhatsApp is mocked until `WHATSAPP_API_URL` and `WHATSAPP_API_TOKEN` are set.
+
+## Supabase project
+
+Create a new project in the [Supabase Dashboard](https://supabase.com/dashboard). Name it `vuna-kenya`. Choose Frankfurt (`eu-central-1`) or London (`eu-west-2`). This session cannot create or switch projects: the CLI has no access token, and the schema must not be applied to any existing project.
+
+After the project exists, open its SQL Editor and run `supabase/migrations/001_profiles_friday_wrap.sql`. The project URL and region are on that project's Connect and settings pages.
+
+Set these on the Node server (`.env.local` locally, and the Vercel project environment). Keep the service-role key server-only:
+
+```
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service_role JWT>
+```
+
+Do not create `VITE_SUPABASE_SERVICE_ROLE_KEY`. Daraja credentials (`DARAJA_*`) stay server-side on Vercel the same way.
 
 ```bash
 npm test

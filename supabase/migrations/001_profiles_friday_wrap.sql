@@ -1,5 +1,7 @@
 -- CMA sandbox: Profile identity for Friday 18:00 WhatsApp wrap.
--- Apply in Supabase SQL editor or via CLI. Safe to re-run.
+-- Apply only on the vuna-kenya project (eu-central-1 or eu-west-2),
+-- in that project's SQL editor or via the CLI after it is linked.
+-- Safe to re-run. Do not apply this file to any other Supabase project.
 
 create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
