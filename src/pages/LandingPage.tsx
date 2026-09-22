@@ -782,14 +782,20 @@ function HarvestPreview() {
                 setPicked(id)
                 setStk('idle')
               }}
-              className={`rounded-[16px] border bg-[#121212] px-2 pb-2.5 pt-2.5 text-center ${
-                selected ? 'border-[#CCFF00]' : 'border-[#222222]'
+              className={`rounded-[16px] px-2 pb-2.5 pt-2.5 text-center ${meta.face} ${
+                selected ? 'ring-2 ring-white' : ''
               }`}
             >
-              <KesAmount value={id === 'FITNESS' ? 100 : 0} tone="lime" className="text-[15px] leading-none" />
+              <KesAmount
+                value={id === 'FITNESS' ? 100 : 0}
+                tone={meta.ink ? 'ink' : 'white'}
+                className="text-[15px] leading-none"
+              />
               <p className="mt-1.5 text-[18px] leading-none">{meta.emoji}</p>
-              <p className="mt-1 text-[11px] font-extrabold tracking-wide text-white">{meta.label}</p>
-              <p className="mt-0.5 text-[8px] font-semibold tracking-[0.12em] text-[#555555]">
+              <p className={`mt-1 text-[11px] font-extrabold tracking-wide ${meta.ink ? 'text-[#111111]' : 'text-white'}`}>
+                {meta.label}
+              </p>
+              <p className={`mt-0.5 text-[8px] font-semibold tracking-[0.12em] ${meta.ink ? 'text-black/55' : 'text-white/75'}`}>
                 TOTAL ACCUMULATED
               </p>
             </button>

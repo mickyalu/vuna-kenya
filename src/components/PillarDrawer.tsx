@@ -56,7 +56,9 @@ export function PillarDrawer({ swapSlot, onPick }: Props) {
                 }}
                 className="flex w-full items-center gap-3 rounded-2xl bg-vuna-raised px-3 py-3 text-left"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-vuna-card text-lg">
+                <span
+                  className={`flex h-11 w-11 items-center justify-center rounded-full text-lg ${meta.face}`}
+                >
                   {meta.emoji}
                 </span>
                 <span className="min-w-0 flex-1">

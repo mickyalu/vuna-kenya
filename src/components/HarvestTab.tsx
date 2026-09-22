@@ -54,16 +54,34 @@ export function HarvestTab() {
                   setSwapSlot(slot)
                   setActivityPillar(id)
                 }}
-                className={`rounded-[22px] border px-3 pb-4 pt-4 text-center transition ${
-                  selected ? 'border-vuna-lime bg-vuna-card' : 'border-vuna-border bg-vuna-card'
+                className={`rounded-[22px] px-3 pb-4 pt-4 text-center transition ${meta.face} ${
+                  selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0a]' : ''
                 }`}
               >
-                <KesAmount value={pillars[id]} tone="lime" className="text-[20px] leading-none" />
-                <p className="mt-3 text-[28px] leading-none">{meta.emoji}</p>
-                <p className="mt-2 text-[14px] font-extrabold tracking-wide text-white">
+                <KesAmount
+                  value={pillars[id]}
+                  tone={meta.ink ? 'ink' : 'white'}
+                  className="text-[26px] leading-none"
+                />
+                <span
+                  className={`mx-auto mt-3 flex h-10 w-10 items-center justify-center rounded-full text-[20px] leading-none ${
+                    meta.ink ? 'bg-black/10' : 'bg-white/15'
+                  }`}
+                >
+                  {meta.emoji}
+                </span>
+                <p
+                  className={`mt-2 text-[14px] font-extrabold tracking-wide ${
+                    meta.ink ? 'text-[#111111]' : 'text-white'
+                  }`}
+                >
                   {meta.label}
                 </p>
-                <p className="mt-1 text-[10px] font-semibold tracking-[0.14em] text-vuna-dim">
+                <p
+                  className={`mt-1 text-[10px] font-semibold tracking-[0.14em] ${
+                    meta.ink ? 'text-black/55' : 'text-white/75'
+                  }`}
+                >
                   TOTAL ACCUMULATED
                 </p>
               </button>

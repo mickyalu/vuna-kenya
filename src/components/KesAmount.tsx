@@ -5,6 +5,7 @@ const TONES = {
   lime: 'text-vuna-lime',
   mint: 'text-vuna-mint',
   muted: 'text-vuna-muted',
+  ink: 'text-[#111111]',
 } as const
 
 type KesAmountProps = {
