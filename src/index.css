@@ -11,7 +11,7 @@
   --color-vuna-mint: #3dd68c;
   --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Bebas Neue', 'Oswald', sans-serif;
-  --font-amount: 'M PLUS Rounded 1c', 'Nunito', sans-serif;
+  --font-amount: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html {
@@ -76,7 +76,7 @@ input[type='number'] {
 
 .font-amount {
   font-family: var(--font-amount);
-  font-weight: 800;
+  font-weight: 600;
   font-feature-settings: 'tnum' 1;
 }
 

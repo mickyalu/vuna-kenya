@@ -317,7 +317,7 @@ export function LandingPage() {
                 </label>
                 <p className="text-[13px] text-[#888888]">
                   {meta.emoji} {meta.label} · {meta.blurb} {freq} lock{freq === 1 ? '' : 's'} each week
-                  at {formatKes(kes, 0)}.
+                  at <span className="font-amount text-white">{formatKes(kes, 0)}</span>.
                 </p>
               </div>
               <article className="rounded-[22px] border border-[#CCFF00] bg-[#0A0A0A] p-5">
@@ -808,7 +808,15 @@ function HarvestPreview() {
           disabled={stk !== 'idle'}
           className="mt-2 w-full rounded-full bg-[#CCFF00] py-2 text-[13px] font-semibold text-black disabled:opacity-70"
         >
-          {stk === 'idle' ? 'Send STK' : stk === 'pending' ? 'Waiting on M-Pesa…' : 'Locked. KES 100 invested.'}
+          {stk === 'idle' ? (
+            'Send STK'
+          ) : stk === 'pending' ? (
+            'Waiting on M-Pesa…'
+          ) : (
+            <>
+              Locked. <span className="font-amount">KES 100</span> invested.
+            </>
+          )}
         </button>
         {stk === 'locked' ? (
           <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#3DD68C]">
