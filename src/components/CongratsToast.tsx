@@ -21,7 +21,7 @@ export function CongratsToast() {
           : Check
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[95] flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[45] flex justify-center px-3 pb-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))]">
       <button
         type="button"
         onClick={() => {

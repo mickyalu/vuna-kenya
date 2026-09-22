@@ -396,10 +396,6 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [notice])
 
   useEffect(() => {
-    return later(() => setNotice(SEED_GIFT_NOTICE), 700)
-  }, [])
-
-  useEffect(() => {
     const w = safeWindow()
     if (!w) return
     const params = new URLSearchParams(w.location.search)
