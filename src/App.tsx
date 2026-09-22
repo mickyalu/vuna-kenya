@@ -41,7 +41,7 @@ function splashRemaining() {
 }
 
 function AppChromeHeader() {
-  const { install, installed } = usePwaInstall()
+  const { install, installed, hint, dismissHint } = usePwaInstall()
 
   return (
     <header className="shrink-0 border-b border-[#222222] bg-[#0A0A0A]/95 backdrop-blur">
@@ -75,6 +75,16 @@ function AppChromeHeader() {
           <NoticeBell />
         </div>
       </div>
+      {hint ? (
+        <div className="mx-auto flex max-w-[1120px] items-start justify-between gap-3 px-3 pb-3 sm:px-5">
+          <p className="text-[12px] leading-snug text-[#c8e67a]" role="status">
+            {hint}
+          </p>
+          <button type="button" onClick={dismissHint} className="shrink-0 text-[12px] font-semibold text-white">
+            Close
+          </button>
+        </div>
+      ) : null}
     </header>
   )
 }

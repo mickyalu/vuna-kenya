@@ -1,9 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
+import { installInstructions } from './install-help'
 import { safeWindow } from './runtime'
 
-type BeforeInstall = Event & {
+export type BeforeInstall = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+type InstallWindow = Window & {
+  __vunaInstall?: BeforeInstall | null
+  __vunaInstallBound?: boolean
+}
+
+export function captureInstallPrompt() {
+  const w = window as InstallWindow
+  if (w.__vunaInstallBound) return
+  w.__vunaInstallBound = true
+  w.__vunaInstall = w.__vunaInstall ?? null
+  w.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault()
+    w.__vunaInstall = event as BeforeInstall
+    w.dispatchEvent(new Event('vuna-install-ready'))
+  })
 }
 
 export function registerVunaWorker() {
@@ -27,37 +45,44 @@ export function usePwaInstall() {
   const [hint, setHint] = useState<string | null>(null)
 
   useEffect(() => {
-    const w = safeWindow()
+    const w = safeWindow() as InstallWindow | null
     if (!w) return
     registerVunaWorker()
+    setDeferred(w.__vunaInstall ?? null)
 
-    const onPrompt = (event: Event) => {
-      event.preventDefault()
-      setDeferred(event as BeforeInstall)
-    }
+    const onReady = () => setDeferred(w.__vunaInstall ?? null)
     const onInstalled = () => {
       setInstalled(true)
+      w.__vunaInstall = null
       setDeferred(null)
       setHint(null)
     }
-    w.addEventListener('beforeinstallprompt', onPrompt)
+    w.addEventListener('vuna-install-ready', onReady)
     w.addEventListener('appinstalled', onInstalled)
     return () => {
-      w.removeEventListener('beforeinstallprompt', onPrompt)
+      w.removeEventListener('vuna-install-ready', onReady)
       w.removeEventListener('appinstalled', onInstalled)
     }
   }, [])
 
   const install = useCallback(async () => {
-    if (deferred) {
-      await deferred.prompt()
-      const choice = await deferred.userChoice
+    const w = safeWindow() as InstallWindow | null
+    const promptEvent = deferred ?? w?.__vunaInstall ?? null
+    if (promptEvent) {
+      await promptEvent.prompt()
+      const choice = await promptEvent.userChoice
+      if (w) w.__vunaInstall = null
       setDeferred(null)
-      if (choice.outcome === 'accepted') setInstalled(true)
+      if (choice.outcome === 'accepted') {
+        setInstalled(true)
+        setHint(null)
+      }
       return
     }
-    setHint('Open the browser menu and tap Add to Home Screen. VUNA then launches as an app on /app.')
+    setHint(installInstructions(w?.navigator.userAgent ?? ''))
   }, [deferred])
 
-  return { install, installed, hint, canPrompt: Boolean(deferred) }
+  const dismissHint = useCallback(() => setHint(null), [])
+
+  return { install, installed, hint, dismissHint, canPrompt: Boolean(deferred) }
 }

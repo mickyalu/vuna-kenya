@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test --experimental-strip-types server/audit.test.ts server/wrap.test.ts src/lib/avatars.test.ts src/lib/yield.test.ts src/lib/route.test.ts"
+    "test": "node --test --experimental-strip-types server/audit.test.ts server/wrap.test.ts src/lib/avatars.test.ts src/lib/yield.test.ts src/lib/route.test.ts src/lib/install-help.test.ts"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
