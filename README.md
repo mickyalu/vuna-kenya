@@ -29,14 +29,12 @@ Friday 18:00 EAT wrap: Vercel Cron hits `GET /api/cron/friday-wrap` on `0 15 * *
 
 ## Supabase project
 
-Create a new project in the [Supabase Dashboard](https://supabase.com/dashboard). Name it `vuna-kenya`. Choose Frankfurt (`eu-central-1`) or London (`eu-west-2`). This session cannot create or switch projects: the CLI has no access token, and the schema must not be applied to any existing project.
+Friday wrap uses project `wdyzzxrqphfmroxcskna` (`https://wdyzzxrqphfmroxcskna.supabase.co`). The `profiles` and `habit_events` schema in `supabase/migrations/001_profiles_friday_wrap.sql` is already applied there. Do not run that SQL on any other project, including `etshbvpvhgnifcejptay`.
 
-After the project exists, open its SQL Editor and run `supabase/migrations/001_profiles_friday_wrap.sql`. The project URL and region are on that project's Connect and settings pages.
-
-Set these on the Node server (`.env.local` locally, and the Vercel project environment). Keep the service-role key server-only:
+Set these on the Node server (`.env.local` locally, and the Vercel project environment). Copy the service-role JWT from that project's API settings. Keep it server-only:
 
 ```
-SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_URL=https://wdyzzxrqphfmroxcskna.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role JWT>
 ```
 
