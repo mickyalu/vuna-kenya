@@ -19,7 +19,8 @@ import {
 import { parseKesInput } from '../lib/money'
 import { isMsisdn, maskMsisdn, toKesInteger, toMsisdn } from '../lib/mpesa'
 import { describeNotify } from '../lib/notify'
-import { later, safeDocument, safeWindow } from '../lib/runtime'
+import { accruedYieldKes, protocolLock } from '../lib/lock-math'
+import { later, every, safeDocument, safeWindow } from '../lib/runtime'
 import {
   clearPendingStk,
   loadCredits,
@@ -31,7 +32,7 @@ import {
   type PendingStk,
 } from '../lib/credits'
 import { clearVunaStore, readJson, readStore, removeStore, writeStore } from '../lib/storage'
-import { getStkStatus, pollStkStatus, pushStk, registerMsisdn } from '../lib/stk-client'
+import { fetchLocks, getStkStatus, pollStkStatus, pushStk, registerMsisdn } from '../lib/stk-client'
 import {
   DEFAULT_PINNED,
   emptyPillarTotals,
@@ -198,6 +199,7 @@ type VunaState = {
   estimatedHarvest: number
   lockMonths: number
   daysRemaining: number
+  lockStarted: boolean
   goalName: string
   goalTarget: number
   progressPct: number
@@ -300,10 +302,7 @@ const VunaContext = createContext<VunaState | null>(null)
 export function VunaProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>('harvest')
   const [deposits, setDeposits] = useState(() => SEED_DEPOSITS + lockKesFromCredits(loadCredits()))
-  const [yieldEarned] = useState(8)
-  const tickingYield = 0.1641
-  const [lockMonths] = useState(12)
-  const [daysRemaining] = useState(280)
+  const [clock, setClock] = useState(() => Date.now())
   const [goalName] = useState('General Wealth')
   const [pillars, setPillars] = useState<Record<PillarId, number>>(() =>
     hydratePillars(loadCredits()),
@@ -389,6 +388,47 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<InAppNotice | null>(null)
   const resumed = useRef(false)
 
+  useEffect(() => every(() => setClock(Date.now()), 1000), [])
+
+  useEffect(() => {
+    let cancel = false
+    void fetchLocks()
+      .then((locks) => {
+        if (cancel || !locks.length) return
+        const pendingId = loadPendingStk()?.checkoutRequestId
+        let added = false
+        for (const lock of locks) {
+          if (lock.checkoutRequestId === pendingId) continue
+          const saved = rememberCredit({
+            checkoutRequestId: lock.checkoutRequestId,
+            merchantRequestId: '',
+            habitId: lock.habitId,
+            activity: '',
+            pillar: lock.pillar,
+            amountKes: lock.amountKes,
+            kind: 'lock',
+            status: 'success',
+            resultCode: 0,
+            resultDesc: null,
+            mpesaReceipt: lock.mpesaReceipt,
+            timestamp: lock.timestamp,
+            msisdnMasked: '',
+            lockMonths: lock.lockMonths,
+            unlocksAt: lock.unlocksAt,
+          })
+          if (saved.added) added = true
+        }
+        if (!added) return
+        const credits = loadCredits()
+        setDeposits(SEED_DEPOSITS + lockKesFromCredits(credits))
+        setPillars(hydratePillars(credits))
+      })
+      .catch(() => {})
+    return () => {
+      cancel = true
+    }
+  }, [])
+
   useEffect(() => {
     if (!lockPrompt) return
     return later(() => setLockPrompt(null), 4200)
@@ -455,6 +495,13 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     [lines],
   )
 
+  const lockCredits = loadCredits().filter((row) => row.kind === 'lock')
+  const yieldEarned = accruedYieldKes(lockCredits, clock)
+  const tickingYield = yieldEarned
+  const term = protocolLock(lockCredits, clock)
+  const lockMonths = term.lockMonths
+  const daysRemaining = term.daysRemaining ?? 0
+  const lockStarted = term.started
   const estimatedHarvest = deposits + yieldEarned
   const progressPct = Math.min(100, (deposits / GOAL_TARGET_KES) * 100)
 
@@ -1428,6 +1475,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     deposits,
     yieldEarned,
     tickingYield,
+    lockStarted,
     estimatedHarvest,
     lockMonths,
     daysRemaining,

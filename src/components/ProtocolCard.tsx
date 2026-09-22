@@ -1,6 +1,5 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { KesAmount } from './KesAmount'
-import { useYieldTick } from '../lib/useYieldTick'
 import { useVuna } from '../store/VunaContext'
 import { PersonAvatar } from './PersonAvatar'
 
@@ -14,9 +13,7 @@ export function ProtocolCard() {
     avatarUrl,
     balanceHidden,
     toggleBalanceHidden,
-    confirmedLockKes,
   } = useVuna()
-  const liveTick = useYieldTick(tickingYield, 0.0003, 1200, confirmedLockKes > 0)
 
   return (
     <section
@@ -81,7 +78,7 @@ export function ProtocolCard() {
         >
           +
           <KesAmount
-            value={liveTick}
+            value={tickingYield}
             digits={4}
             tone="mint"
             className="text-[11px] font-medium"

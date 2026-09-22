@@ -33,6 +33,8 @@ export type PublicStkStatus = {
   mpesaReceipt: string | null
   timestamp: string
   msisdnMasked: string
+  lockMonths?: number
+  unlocksAt?: string | null
 }
 
 export type StkPushRequest = {

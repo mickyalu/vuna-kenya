@@ -1,3 +1,5 @@
+import { weeklyYieldOnSavings } from './lock-math.ts'
+
 export type HabitEvent = {
   amount_kes: number
   occurred_at: string
@@ -13,8 +15,6 @@ export type WeeklyStats = {
 }
 
 const EAT = 'Africa/Nairobi'
-/** Display yield on the wrap card: 1.4375% of verified micro-saves this week. */
-const WEEKLY_YIELD_RATE = 0.014375
 /** Nairobi has no DST. Midnight EAT is 21:00 UTC the previous calendar day. */
 const EAT_OFFSET_MS = 3 * 60 * 60 * 1000
 
@@ -76,7 +76,7 @@ export function computeWeeklyStats(events: HabitEvent[], now = new Date()): Week
   const habits_completed_count = week.length
   const days = new Set(week.map((e) => dayKey(e.occurred_at)))
   const consistency_pct = Math.min(100, Math.round((days.size / 7) * 100))
-  const yield_earned_kes = Math.round(total_saved_kes * WEEKLY_YIELD_RATE * 100) / 100
+  const yield_earned_kes = weeklyYieldOnSavings(total_saved_kes)
   const current_streak_days = streakEndingAt(verified(events), now)
 
   return {

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { weeklyYieldOnSavings } from '../src/lib/lock-math.ts'
 import {
   queryWeeklyMetrics,
   formatWhatsAppReport,
@@ -27,7 +28,8 @@ test('weekly stats use last 7 days of verified locks', () => {
   assert.equal(stats.habits_completed_count, 8)
   assert.equal(stats.total_saved_kes, 2400)
   assert.equal(stats.consistency_pct, 100)
-  assert.equal(stats.yield_earned_kes, 34.5)
+  assert.equal(stats.yield_earned_kes, weeklyYieldOnSavings(2400))
+  assert.ok(stats.yield_earned_kes > 4 && stats.yield_earned_kes < 5)
   assert.equal(stats.current_streak_days, 7)
 })
 

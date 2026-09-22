@@ -29,7 +29,7 @@ Friday 18:00 EAT wrap: Vercel Cron hits `GET /api/cron/friday-wrap` on `0 15 * *
 
 ## Supabase project
 
-Friday wrap uses project `wdyzzxrqphfmroxcskna` (`https://wdyzzxrqphfmroxcskna.supabase.co`). The `profiles` and `habit_events` schema in `supabase/migrations/001_profiles_friday_wrap.sql` is already applied there. Do not run that SQL on any other project, including `etshbvpvhgnifcejptay`.
+Friday wrap uses project `wdyzzxrqphfmroxcskna` (`https://wdyzzxrqphfmroxcskna.supabase.co`). The `profiles` and `habit_events` schema in `supabase/migrations/001_profiles_friday_wrap.sql` is already applied there. `002_lock_periods.sql` adds the 12-month unlock on each paid lock. Apply that file on `wdyzzxrqphfmroxcskna` only. Do not run either file on any other project, including `etshbvpvhgnifcejptay`.
 
 Set these on the Node server (`.env.local` locally, and the Vercel project environment). Copy the service-role JWT from that project's API settings. Keep it server-only:
 

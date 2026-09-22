@@ -10,9 +10,9 @@ import {
 } from './daraja.ts'
 import { applyCallback, asPublic, getByCheckout, insertPending, newIds } from './ledger.ts'
 import { logError, logInfo, logWarn } from './log.ts'
-import { allowStkPush, bindCheckout, clearPendingPush, releaseCheckout } from './rate-limit.ts'
+import { allowStkPush, bindCheckout, checkoutMsisdn, clearPendingPush, releaseCheckout } from './rate-limit.ts'
 import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts'
-import { cronAuthorized, runFridayWrap, upsertWrapProfile } from './wrap.ts'
+import { cronAuthorized, listLocksForPhone, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
   const headers = new Headers(extra)
@@ -38,13 +38,26 @@ function mockSettle(checkoutRequestId: string) {
   const raw = Number(process.env.VUNA_STK_MOCK_DELAY_MS ?? 1800)
   const delay = Number.isFinite(raw) ? Math.max(0, raw) : 1800
   const run = () => {
-    applyCallback({
+    const applied = applyCallback({
       checkoutRequestId,
       resultCode: 0,
       resultDesc: 'Mock callback. Set DARAJA_* to use live Safaricom.',
       mpesaReceipt: mockReceipt(checkoutRequestId),
       amountKes: getByCheckout(checkoutRequestId)?.amountKes ?? null,
     })
+    const msisdn = checkoutMsisdn(checkoutRequestId)
+    const row = applied?.row
+    if (applied?.firstCredit && row?.kind === 'lock' && msisdn) {
+      void recordLockEvent({
+        msisdn,
+        habitId: row.habitId,
+        pillar: row.pillar,
+        amountKes: row.amountKes,
+        checkoutRequestId: row.checkoutRequestId,
+        mpesaReceipt: row.mpesaReceipt,
+        occurredAt: row.timestamp,
+      }).catch(() => logError('lock event not stored'))
+    }
     releaseCheckout(checkoutRequestId)
   }
   if (delay === 0) run()
@@ -227,6 +240,25 @@ export async function handleStkCallback(req: Request) {
     return json({ ResultCode: 0, ResultDesc: 'Accepted' })
   }
 
+  if (applied.firstCredit && applied.row.kind === 'lock') {
+    const msisdn = checkoutMsisdn(parsed.checkoutRequestId)
+    if (msisdn) {
+      try {
+        await recordLockEvent({
+          msisdn,
+          habitId: applied.row.habitId,
+          pillar: applied.row.pillar,
+          amountKes: applied.row.amountKes,
+          checkoutRequestId: applied.row.checkoutRequestId,
+          mpesaReceipt: applied.row.mpesaReceipt,
+          occurredAt: applied.row.timestamp,
+        })
+      } catch {
+        logError('lock event not stored')
+      }
+    }
+  }
+
   if (applied.row.status !== 'pending') releaseCheckout(parsed.checkoutRequestId)
 
   logInfo(
@@ -260,6 +292,14 @@ export async function handleProfileWrap(req: Request) {
   )
 }
 
+export async function handleLocks(req: Request) {
+  if (req.method !== 'GET') return error('Method not allowed', 405)
+  const resolved = resolveMsisdn(req)
+  if (!resolved) return error('Register a Safaricom MSISDN first.', 401)
+  const locks = await listLocksForPhone(resolved.msisdn)
+  return json({ locks })
+}
+
 export async function handleFridayWrap(req: Request) {
   if (req.method !== 'GET' && req.method !== 'POST') return error('Method not allowed', 405)
   if (!cronAuthorized(req)) return error('Unauthorized', 401)
@@ -284,6 +324,7 @@ export async function handleApi(req: Request): Promise<Response | null> {
   if (path === '/api/stk/push') return handleStkPush(req)
   if (path === '/api/stk/status') return handleStkStatus(req)
   if (path === '/api/stk/callback') return handleStkCallback(req)
+  if (path === '/api/locks') return handleLocks(req)
   if (path === '/api/profile/wrap') return handleProfileWrap(req)
   if (path === '/api/cron/friday-wrap') return handleFridayWrap(req)
   return null

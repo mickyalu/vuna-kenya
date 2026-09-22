@@ -33,6 +33,10 @@ export function releaseCheckout(checkoutRequestId: string) {
   }
 }
 
+export function checkoutMsisdn(checkoutRequestId: string) {
+  return checkoutOwner.get(checkoutRequestId) ?? null
+}
+
 export function clearPendingPush(msisdn: string) {
   pendingPhones.delete(msisdn)
 }

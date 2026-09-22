@@ -41,6 +41,25 @@ export async function pushStk(input: {
   return data
 }
 
+export type ServerLock = {
+  checkoutRequestId: string
+  mpesaReceipt: string | null
+  amountKes: number
+  habitId: string
+  pillar: string
+  timestamp: string
+  lockMonths: number
+  unlocksAt: string
+}
+
+export async function fetchLocks(): Promise<ServerLock[]> {
+  const res = await fetch('/api/locks', { credentials: 'include' })
+  if (res.status === 401) return []
+  const data = await readJsonSafe<{ locks?: ServerLock[]; error?: string }>(res)
+  if (!res.ok) return []
+  return data.locks ?? []
+}
+
 export async function getStkStatus(checkoutRequestID: string): Promise<PublicStkStatus> {
   const res = await fetch(`/api/stk/status?checkoutRequestID=${encodeURIComponent(checkoutRequestID)}`, {
     credentials: 'include',

@@ -1,6 +1,5 @@
 import { ChevronRight, Send } from 'lucide-react'
 import { KesAmount } from './KesAmount'
-import { useYieldTick } from '../lib/useYieldTick'
 import { useVuna } from '../store/VunaContext'
 
 export function LockTab() {
@@ -9,13 +8,12 @@ export function LockTab() {
     progressPct,
     lockMonths,
     daysRemaining,
+    lockStarted,
     deposits,
     yieldEarned,
     openTransfer,
-    confirmedLockKes,
   } = useVuna()
-  const liveYield = useYieldTick(yieldEarned, 0.0003, 1200, confirmedLockKes > 0)
-  const liveHarvest = deposits + liveYield
+  const liveHarvest = deposits + yieldEarned
 
   return (
     <div className="space-y-5 pb-4">
@@ -44,8 +42,8 @@ export function LockTab() {
           />
         </div>
         <div className="mt-3 flex items-center justify-between text-[12px] text-vuna-muted">
-          <span>Locked: {lockMonths} Months</span>
-          <span>{daysRemaining} Days Remaining</span>
+          <span>Locked: {lockMonths} months</span>
+          <span>{lockStarted ? `${daysRemaining} days remaining` : 'Starts on your first lock'}</span>
         </div>
       </section>
 
@@ -63,9 +61,12 @@ export function LockTab() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-vuna-muted">Yield earned</span>
-            <KesAmount value={liveYield} tone="mint" className="text-[15px]" />
+            <KesAmount value={yieldEarned} tone="mint" digits={4} className="text-[15px]" />
           </div>
         </div>
+        <p className="mt-3 text-[12px] leading-snug text-vuna-muted">
+          Paid locks earn 10% a year, compounded daily. Adding money raises the deposit. It does not move the unlock date.
+        </p>
       </section>
 
       <section>

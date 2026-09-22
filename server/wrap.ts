@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { LOCK_MONTHS, unlocksAtFrom } from '../src/lib/lock-math.ts'
 import { maskMsisdn } from '../shared/mask.ts'
 import { toMsisdn } from '../shared/phone.ts'
 import { listPublic } from './ledger.ts'
@@ -68,12 +69,15 @@ async function supabaseRest<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   })
+  if (res.status === 409) return [] as T
   if (!res.ok) {
     logError('supabase rest failed')
     throw new Error('Profile store unavailable.')
   }
   if (res.status === 204) return [] as T
-  return (await res.json()) as T
+  const text = await res.text()
+  if (!text) return [] as T
+  return JSON.parse(text) as T
 }
 
 export async function upsertWrapProfile(msisdn: string, enabled: boolean, name?: string) {
@@ -102,6 +106,166 @@ export async function upsertWrapProfile(msisdn: string, enabled: boolean, name?:
     })
   }
   return { phone_number: msisdn, friday_wrap_enabled: enabled, source: 'supabase' as const }
+}
+
+export type StoredLock = {
+  checkoutRequestId: string
+  mpesaReceipt: string | null
+  amountKes: number
+  habitId: string
+  pillar: string
+  timestamp: string
+  lockMonths: number
+  unlocksAt: string
+}
+
+async function ensureProfileId(msisdn: string) {
+  const rows = await supabaseRest<{ id: string }[]>(
+    `/rest/v1/profiles?phone_number=eq.${encodeURIComponent(msisdn)}&select=id`,
+  )
+  if (rows[0]?.id) return rows[0].id
+  const created = await supabaseRest<{ id: string }[]>('/rest/v1/profiles', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({
+      phone_number: msisdn,
+      friday_wrap_enabled: true,
+    }),
+  })
+  return created[0]?.id ?? null
+}
+
+/** Paid locks only. Gifts stay off this table. Later locks keep the first unlock date. */
+export async function recordLockEvent(input: {
+  msisdn: string
+  habitId: string
+  pillar: string
+  amountKes: number
+  checkoutRequestId: string
+  mpesaReceipt: string | null
+  occurredAt: string
+}) {
+  const already = await listLocksForPhone(input.msisdn)
+  const firstMs = [...already.map((lock) => new Date(lock.timestamp).getTime()), new Date(input.occurredAt).getTime()]
+    .filter((t) => Number.isFinite(t))
+    .reduce((min, t) => Math.min(min, t), Number.POSITIVE_INFINITY)
+  const unlocksAt = unlocksAtFrom(new Date(firstMs))
+  if (!supabaseConfigured()) {
+    logInfo('lock kept on ledger', maskMsisdn(input.msisdn))
+    return { unlocksAt, stored: 'ledger' as const }
+  }
+  const profileId = await ensureProfileId(input.msisdn)
+  if (!profileId) throw new Error('Profile store unavailable.')
+  const base = {
+    profile_id: profileId,
+    habit_id: input.habitId,
+    amount_kes: input.amountKes,
+    checkout_request_id: input.checkoutRequestId,
+    mpesa_receipt: input.mpesaReceipt,
+    status: 'success',
+    occurred_at: input.occurredAt,
+  }
+  const full = {
+    ...base,
+    pillar: input.pillar,
+    lock_months: LOCK_MONTHS,
+    unlocks_at: unlocksAt,
+  }
+  try {
+    await supabaseRest('/rest/v1/habit_events', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify(full),
+    })
+  } catch {
+    await supabaseRest('/rest/v1/habit_events', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(base),
+    })
+    logInfo('lock stored without unlock column — apply 002_lock_periods.sql')
+  }
+  logInfo('lock stored', maskMsisdn(input.msisdn))
+  return { unlocksAt, stored: 'supabase' as const }
+}
+
+function shareUnlock(locks: StoredLock[]): StoredLock[] {
+  if (!locks.length) return locks
+  const first = locks.reduce((min, lock) => {
+    const t = new Date(lock.timestamp).getTime()
+    return Number.isFinite(t) ? Math.min(min, t) : min
+  }, Number.POSITIVE_INFINITY)
+  const unlocksAt = unlocksAtFrom(new Date(first))
+  return locks.map((lock) => ({ ...lock, lockMonths: LOCK_MONTHS, unlocksAt }))
+}
+
+export async function listLocksForPhone(msisdn: string): Promise<StoredLock[]> {
+  const fromLedger: StoredLock[] = listPublic(500)
+    .filter(
+      (row) =>
+        row.kind === 'lock' &&
+        row.status === 'success' &&
+        row.msisdnMasked === maskMsisdn(msisdn) &&
+        row.unlocksAt,
+    )
+    .map((row) => ({
+      checkoutRequestId: row.checkoutRequestId,
+      mpesaReceipt: row.mpesaReceipt,
+      amountKes: row.amountKes,
+      habitId: row.habitId,
+      pillar: row.pillar,
+      timestamp: row.timestamp,
+      lockMonths: row.lockMonths ?? LOCK_MONTHS,
+      unlocksAt: row.unlocksAt || unlocksAtFrom(row.timestamp),
+    }))
+
+  if (!supabaseConfigured()) return shareUnlock(fromLedger)
+
+  try {
+    const profiles = await supabaseRest<{ id: string }[]>(
+      `/rest/v1/profiles?phone_number=eq.${encodeURIComponent(msisdn)}&select=id`,
+    )
+    const id = profiles[0]?.id
+    if (!id) return shareUnlock(fromLedger)
+    let rows: {
+      habit_id: string
+      amount_kes: number
+      checkout_request_id: string | null
+      mpesa_receipt: string | null
+      occurred_at: string
+      status: string
+      pillar?: string | null
+      lock_months?: number | null
+      unlocks_at?: string | null
+    }[]
+    try {
+      rows = await supabaseRest(
+        `/rest/v1/habit_events?profile_id=eq.${id}&status=eq.success&select=habit_id,amount_kes,checkout_request_id,mpesa_receipt,occurred_at,status,pillar,lock_months,unlocks_at&order=occurred_at.asc&limit=500`,
+      )
+    } catch {
+      rows = await supabaseRest(
+        `/rest/v1/habit_events?profile_id=eq.${id}&status=eq.success&select=habit_id,amount_kes,checkout_request_id,mpesa_receipt,occurred_at,status&order=occurred_at.asc&limit=500`,
+      )
+    }
+    const seen = new Set(rows.map((row) => row.checkout_request_id).filter(Boolean))
+    const stored = rows.map((row) => ({
+      checkoutRequestId: row.checkout_request_id || row.habit_id,
+      mpesaReceipt: row.mpesa_receipt,
+      amountKes: row.amount_kes,
+      habitId: row.habit_id,
+      pillar: row.pillar || '',
+      timestamp: row.occurred_at,
+      lockMonths: row.lock_months || LOCK_MONTHS,
+      unlocksAt: row.unlocks_at || unlocksAtFrom(row.occurred_at),
+    }))
+    for (const lock of fromLedger) {
+      if (!seen.has(lock.checkoutRequestId)) stored.push(lock)
+    }
+    return shareUnlock(stored)
+  } catch {
+    logError('lock list failed')
+    return shareUnlock(fromLedger)
+  }
 }
 
 export async function listWrapRecipients(): Promise<WrapRecipient[]> {

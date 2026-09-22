@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { LOCK_MONTHS, unlocksAtFrom } from '../src/lib/lock-math.ts'
 import type { LedgerEntry, LedgerStatus, PublicStkStatus, StkKind } from '../shared/stk-types.ts'
 import { logError } from './log.ts'
 
@@ -45,6 +46,19 @@ function persist() {
   }
 }
 
+function protocolUnlock(row: LedgerEntry) {
+  if (row.kind !== 'lock') return {}
+  const samePayer = Object.values(mem.byCheckout).filter(
+    (item) =>
+      item.kind === 'lock' &&
+      item.credited &&
+      item.msisdnMasked === row.msisdnMasked,
+  )
+  const stamps = samePayer.length ? samePayer : [row]
+  const first = stamps.reduce((min, item) => Math.min(min, new Date(item.timestamp).getTime()), Number.POSITIVE_INFINITY)
+  return { lockMonths: LOCK_MONTHS, unlocksAt: unlocksAtFrom(new Date(first)) }
+}
+
 function publicView(row: LedgerEntry): PublicStkStatus {
   return {
     checkoutRequestId: row.checkoutRequestId,
@@ -60,6 +74,7 @@ function publicView(row: LedgerEntry): PublicStkStatus {
     mpesaReceipt: row.mpesaReceipt,
     timestamp: row.timestamp,
     msisdnMasked: row.msisdnMasked,
+    ...protocolUnlock(row),
   }
 }
 
