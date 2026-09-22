@@ -64,8 +64,10 @@ export function HarvestTab() {
                   className="text-[26px] leading-none"
                 />
                 <span
-                  className={`mx-auto mt-3 flex h-10 w-10 items-center justify-center rounded-full text-[20px] leading-none ${
-                    meta.ink ? 'bg-black/10' : 'bg-white/15'
+                  className={`mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-full text-[24px] leading-none ${
+                    meta.ink
+                      ? 'bg-[#111111] shadow-[0_0_0_3px_rgba(17,17,17,0.28)]'
+                      : 'bg-white shadow-[0_0_0_3px_rgba(255,255,255,0.55)]'
                   }`}
                 >
                   {meta.emoji}

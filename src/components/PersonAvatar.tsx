@@ -17,7 +17,7 @@ export function PersonAvatar({
   if (failed || !src) {
     return (
       <span
-        className={`inline-flex items-center justify-center rounded-full bg-[#2a2a2a] text-[11px] font-bold text-white ${className}`}
+        className={`inline-flex items-center justify-center rounded-full bg-[#CCFF00] text-[13px] font-extrabold text-[#111111] ring-2 ring-[#CCFF00] ${className}`}
         style={{ width: size, height: size }}
       >
         {initial}
@@ -32,7 +32,7 @@ export function PersonAvatar({
       width={size}
       height={size}
       onError={() => setFailed(true)}
-      className={`rounded-full object-cover object-top ${className}`}
+      className={`rounded-full object-cover object-[center_18%] ring-2 ring-[#CCFF00] ${className}`}
       style={{ width: size, height: size }}
     />
   )

@@ -68,7 +68,7 @@ export function AvatarStack({
       {faces.slice(0, 4).map((face, i) => (
         <span
           key={`${face.alt}-${i}`}
-          className="relative -ml-2 rounded-full border-2 border-[#121212]"
+          className="relative -ml-2 rounded-full ring-2 ring-[#0A0A0A]"
           style={{ zIndex: 4 - i }}
         >
           <PersonAvatar src={face.src} alt={face.alt} size={size} />
