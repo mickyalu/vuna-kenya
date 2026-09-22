@@ -23,6 +23,7 @@ export type FeedPost = {
   kind?: FeedKind
   handle: string
   tribe: string
+  clubId?: string
   avatar: string
   text: string
   streak: number
@@ -59,6 +60,7 @@ export type LogDraft = {
 export type LeaderRow = {
   handle: string
   tribe: string
+  clubId?: string
   avatar: string
   kes: number
   streak: number

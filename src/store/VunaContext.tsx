@@ -118,7 +118,8 @@ const INITIAL_FEED: FeedPost[] = [
     id: 'g-mkuu',
     kind: 'gift',
     handle: '@MKUU_ABAN',
-    tribe: 'Karura Runners',
+    tribe: '5AM Club',
+    clubId: 'FITNESS',
     avatar: FACE_PHOTOS.Mkuu,
     text: 'sent you a Vuna Gift',
     streak: 2,
@@ -135,7 +136,8 @@ const INITIAL_FEED: FeedPost[] = [
   {
     id: 'p1',
     handle: '@MKUU_ABAN',
-    tribe: 'Karura Runners',
+    tribe: '5AM Club',
+    clubId: 'FITNESS',
     avatar: FACE_PHOTOS.Mkuu,
     text: 'Just finished my 5AM Karura run. Consistency is the only hack.',
     streak: 2,
@@ -148,6 +150,7 @@ const INITIAL_FEED: FeedPost[] = [
     id: 'p2',
     handle: '@SAMANTHA_V',
     tribe: 'Mindful Morning',
+    clubId: 'HEALTH',
     avatar: FACE_PHOTOS.Sam,
     text: 'Cold shower + 10 minutes of stillness before the matatu crush.',
     streak: 15,
@@ -159,7 +162,8 @@ const INITIAL_FEED: FeedPost[] = [
   {
     id: 'p3',
     handle: '@NZOMO_K',
-    tribe: 'Westlands Lifters',
+    tribe: '5AM Club',
+    clubId: 'FITNESS',
     avatar: FACE_PHOTOS.Nzomo,
     text: 'Locked KES 200 after completing my gym session. M-Pesa receipt incoming.',
     streak: 7,
@@ -171,10 +175,10 @@ const INITIAL_FEED: FeedPost[] = [
 ]
 
 const INITIAL_LEADERS: LeaderRow[] = [
-  { handle: '@SAMANTHA_V', tribe: 'Health', avatar: FACE_PHOTOS.Sam, kes: 12400, streak: 15 },
-  { handle: '@MKUU_ABAN', tribe: 'Fitness', avatar: FACE_PHOTOS.Mkuu, kes: 9800, streak: 2 },
-  { handle: '@NZOMO_K', tribe: 'Fitness', avatar: FACE_PHOTOS.Nzomo, kes: 7200, streak: 7 },
-  { handle: '@AWINO', tribe: 'Lifestyle', avatar: FACE_PHOTOS.Awino, kes: 4100, streak: 4 },
+  { handle: '@SAMANTHA_V', tribe: 'Mindful Morning', clubId: 'HEALTH', avatar: FACE_PHOTOS.Sam, kes: 12400, streak: 15 },
+  { handle: '@MKUU_ABAN', tribe: '5AM Club', clubId: 'FITNESS', avatar: FACE_PHOTOS.Mkuu, kes: 9800, streak: 2 },
+  { handle: '@NZOMO_K', tribe: '5AM Club', clubId: 'FITNESS', avatar: FACE_PHOTOS.Nzomo, kes: 7200, streak: 7 },
+  { handle: '@AWINO', tribe: 'Westlands Circle', clubId: 'LIFESTYLE', avatar: FACE_PHOTOS.Awino, kes: 4100, streak: 4 },
 ]
 
 const SEED_GIFT_NOTICE: InAppNotice = {
@@ -514,7 +518,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
             {
               id: uid(),
               handle: `@${cardName}`,
-              tribe: pending.pillar ? `${titleCasePillar(pending.pillar as PillarId)} Tribe` : 'Vuna',
+              tribe: activeClub.name,
+              clubId: activeClub.id,
               avatar: avatarUrl,
               text: pending.caption || `${status.activity} — locked.`,
               streak,
@@ -560,7 +565,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
             id: uid(),
             kind: 'gift',
             handle: `@${cardName}`,
-            tribe: 'Vuna Gift',
+            tribe: activeClub.name,
+            clubId: activeClub.id,
             avatar: avatarUrl,
             text: `sent ${toHandle} a Vuna Gift`,
             streak,
@@ -598,7 +604,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       }
       clearPendingStk()
     },
-    [avatarUrl, cardName, streak],
+    [activeClub.id, activeClub.name, avatarUrl, cardName, streak],
   )
 
   const watchStk = useCallback(
@@ -802,7 +808,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       {
         id: uid(),
         handle: `@${cardName}`,
-        tribe: line.pillar ? `${titleCasePillar(line.pillar)} Tribe` : 'Vuna',
+        tribe: activeClub.name,
+        clubId: activeClub.id,
         avatar: avatarUrl,
         text: note || `${line.description} — done.`,
         streak: streak + 1,
@@ -821,7 +828,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setLockPrompt(null)
     setTab('pulse')
     setPulseTab('feed')
-  }, [lines, logDraft, cardName, avatarUrl, streak])
+  }, [activeClub.id, activeClub.name, lines, logDraft, cardName, avatarUrl, streak])
 
   const setMpesaPhone = useCallback((phone: string) => {
     setMpesaPhoneState(phone)

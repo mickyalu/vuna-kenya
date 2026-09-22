@@ -8,12 +8,14 @@ export function TribeChip({
   youUrl,
   youName,
   compact = false,
+  label,
 }: {
   tribe: Tribe
   onClick: () => void
   youUrl?: string
   youName?: string
   compact?: boolean
+  label?: string
 }) {
   const faces = [
     youUrl
@@ -26,6 +28,7 @@ export function TribeChip({
     <button
       type="button"
       onClick={onClick}
+      aria-label={label ? `${label}, ${tribe.name}. Open tribes on Profile.` : tribe.name}
       className={
         compact
           ? 'flex items-center gap-2 rounded-full border border-vuna-border bg-vuna-raised py-1 pl-1 pr-3'
@@ -33,15 +36,22 @@ export function TribeChip({
       }
     >
       <AvatarStack faces={faces} size={compact ? 28 : 36} />
-      <p
-        className={
-          compact
-            ? 'text-[12px] font-semibold text-white'
-            : 'mt-1.5 text-center text-[13px] font-semibold tracking-wide text-white'
-        }
-      >
-        {tribe.name}
-      </p>
+      <span className={compact ? 'text-left' : 'mt-1.5 block text-center'}>
+        {label ? (
+          <span className="block text-[9px] font-semibold tracking-[0.12em] text-vuna-dim">
+            {label.toUpperCase()}
+          </span>
+        ) : null}
+        <span
+          className={
+            compact
+              ? 'block text-[12px] font-semibold text-white'
+              : 'block text-[13px] font-semibold tracking-wide text-white'
+          }
+        >
+          {tribe.name}
+        </span>
+      </span>
     </button>
   )
 }

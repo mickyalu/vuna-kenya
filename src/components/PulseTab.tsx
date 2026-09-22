@@ -3,7 +3,6 @@ import { Gift, Heart } from 'lucide-react'
 import { monthLabel } from '../lib/avatars'
 import { useVuna } from '../store/VunaContext'
 import { PersonAvatar } from './PersonAvatar'
-import { TribeChip } from './TribeChip'
 import { KesAmount } from './KesAmount'
 import type { FeedPost } from '../types'
 
@@ -32,29 +31,24 @@ export function PulseTab() {
 
   const tribe = activeClub
   const youHandle = `@${cardName}`
+  const circleFeed = feed.filter((post) => post.clubId === tribe.id)
+  const circleLeaders = leaders.filter((row) => row.clubId === tribe.id)
 
   return (
     <div className="space-y-5 pb-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-vuna-muted">
-            SOCIAL TRIBES
-          </p>
-          <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PULSE</h1>
-        </div>
-      </header>
-
-      <div className="flex items-center justify-between gap-3">
-        <TribeChip
-          tribe={tribe}
-          onClick={openTribes}
-          youUrl={avatarUrl}
-          youName={cardName}
-        />
-        <p className="min-w-0 flex-1 text-[12px] leading-snug text-vuna-muted">
-          {tribe.line} Tap the circle to join, sit, or create a tribe.
+      <header>
+        <p className="text-[11px] font-semibold tracking-[0.18em] text-vuna-muted">ACTIVITY</p>
+        <h1 className="font-display mt-1 text-[52px] leading-[0.9] text-white">PULSE</h1>
+        <p className="mt-2 text-[13px] leading-snug text-vuna-muted">
+          Only the tribe you sit in —{' '}
+          <span className="font-semibold text-white">{tribe.name}</span>
+          {' · '}
+          {tribe.live} live.{' '}
+          <button type="button" onClick={openTribes} className="font-semibold text-vuna-lime">
+            All tribes are on Profile.
+          </button>
         </p>
-      </div>
+      </header>
 
       <div className="flex rounded-full bg-vuna-raised p-1">
         <button
@@ -81,25 +75,18 @@ export function PulseTab() {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-3">
-        <p className="flex items-start gap-2 text-[13px] leading-snug text-vuna-mint">
-          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-vuna-mint" />
-          Live: {tribe.live} in {tribe.name} now
-        </p>
-      </div>
-
       {pulseTab === 'feed' ? (
         <section>
           <h2 className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
             VERIFIED PROTOCOL WINS
           </h2>
           <div className="space-y-3">
-            {feed.length === 0 ? (
-              <p className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-8 text-center text-[13px] text-vuna-muted">
-                No verified wins yet. Lock a habit from Harvest to post here.
+            {circleFeed.length === 0 ? (
+              <p className="rounded-2xl border border-vuna-border bg-vuna-card px-4 py-8 text-center text-[13px] leading-snug text-vuna-muted">
+                Nothing from {tribe.name} yet. Lock a habit on Harvest, or sit in another tribe on Profile.
               </p>
             ) : (
-              feed.map((post) =>
+              circleFeed.map((post) =>
                 post.kind === 'gift' ? (
                   <GiftCard
                     key={post.id}
@@ -124,11 +111,10 @@ export function PulseTab() {
                             {timeLabel(post.minutesAgo)}
                           </p>
                         </div>
-                        <div className="mt-0.5 flex items-center justify-between gap-2">
-                          <p className="truncate text-[12px] text-vuna-muted">
-                            {post.tribe}
-                            {post.visibility === 'friends' ? ' · Friends' : ''}
-                          </p>
+                        <div className="mt-0.5 flex items-center justify-end gap-2">
+                          {post.visibility === 'friends' ? (
+                            <p className="mr-auto truncate text-[12px] text-vuna-muted">Friends</p>
+                          ) : null}
                           <span className="shrink-0 rounded-full bg-[#2a2400] px-2.5 py-1 text-[11px] font-semibold text-vuna-lime">
                             🔥 {post.streak} Day Streak
                           </span>
@@ -180,18 +166,18 @@ export function PulseTab() {
             THIS MONTH · {monthLabel().toUpperCase()}
           </h2>
           <p className="mb-3 text-[12px] text-vuna-muted">
-            Ranked by how many vunas you locked this month.
+            People in {tribe.name}, ranked by vunas locked this month.
           </p>
           <div className="space-y-2">
             {[
               {
                 handle: youHandle,
-                tribe: 'You',
+                tribe: tribe.name,
                 avatar: avatarUrl,
                 kes: 0,
                 streak: monthlyVunas,
               },
-              ...leaders,
+              ...circleLeaders,
             ]
               .sort((a, b) => b.streak - a.streak)
               .map((row, index) => (
@@ -205,7 +191,9 @@ export function PulseTab() {
                 <PersonAvatar src={row.avatar} alt={row.handle} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold text-white">{row.handle}</p>
-                  <p className="text-[12px] text-vuna-muted">{row.tribe}</p>
+                  {row.handle === youHandle ? (
+                    <p className="text-[12px] text-vuna-muted">You</p>
+                  ) : null}
                 </div>
                 <div className="text-right">
                   <p className="font-amount text-[20px] leading-none text-vuna-lime">{row.streak}</p>

@@ -29,7 +29,7 @@ export function HarvestTab() {
       <ProtocolCard />
 
       <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <h2 className="text-[13px] font-extrabold tracking-[0.12em] text-white">
             ATOMIC HABIT PILLARS
           </h2>
@@ -39,6 +39,7 @@ export function HarvestTab() {
             youUrl={avatarUrl}
             youName={cardName}
             compact
+            label="Your tribe"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
