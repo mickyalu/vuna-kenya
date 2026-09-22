@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { KesAmount } from './KesAmount'
+import { PillarGlyph } from './PillarGlyph'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
 import { useVuna } from '../store/VunaContext'
 import { ActivitySheet } from './ActivitySheet'
@@ -65,12 +66,12 @@ export function HarvestTab() {
                 />
                 <span
                   className={`mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-full text-[24px] leading-none ${
-                    meta.ink
-                      ? 'bg-[#111111] shadow-[0_0_0_3px_rgba(17,17,17,0.28)]'
-                      : 'bg-white shadow-[0_0_0_3px_rgba(255,255,255,0.55)]'
+                    id === 'HEALTH' || !meta.ink
+                      ? 'bg-white shadow-[0_0_0_3px_rgba(255,255,255,0.55)]'
+                      : 'bg-[#111111] shadow-[0_0_0_3px_rgba(17,17,17,0.28)]'
                   }`}
                 >
-                  {meta.emoji}
+                  <PillarGlyph id={id} size={26} tone={id === 'HEALTH' ? 'accent' : 'on-face'} />
                 </span>
                 <p
                   className={`mt-2 text-[14px] font-extrabold tracking-wide ${

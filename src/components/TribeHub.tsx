@@ -205,7 +205,7 @@ function CreateTribeSheet({ onClose }: { onClose: () => void }) {
           >
             {PILLARS.map((id) => (
               <option key={id} value={id}>
-                {PILLAR_CATALOG[id].emoji} {PILLAR_CATALOG[id].label}
+                {PILLAR_CATALOG[id].emoji ? `${PILLAR_CATALOG[id].emoji} ${PILLAR_CATALOG[id].label}` : PILLAR_CATALOG[id].label}
               </option>
             ))}
           </select>

@@ -1,9 +1,9 @@
 export const PILLAR_CATALOG = {
   FITNESS: { emoji: '🏃', label: 'FITNESS', blurb: 'Training, runs, and strength.', face: 'bg-[#D6FF4A]', ink: true },
-  HEALTH: { emoji: '❤️', label: 'HEALTH', blurb: 'Sleep, meds, and recovery.', face: 'bg-[#FF4B6E]', ink: true },
-  HABITS: { emoji: '✓', label: 'HABITS', blurb: 'Daily non-negotiables.', face: 'bg-[#3A56E8]', ink: false },
-  LIFESTYLE: { emoji: '🌿', label: 'LIFESTYLE', blurb: 'Rhythm, home, and presence.', face: 'bg-[#6846F0]', ink: false },
-  RELATIONSHIP: { emoji: '💞', label: 'RELATIONSHIP', blurb: 'Partner, family, and care.', face: 'bg-[#FF7A45]', ink: true },
+  HEALTH: { emoji: '', label: 'HEALTH', blurb: 'Sleep, meds, and recovery.', face: 'bg-[#FF4B6E]', ink: true },
+  HABITS: { emoji: '✓', label: 'HABITS', blurb: 'Daily non-negotiables.', face: 'bg-[#2563EB]', ink: false },
+  LIFESTYLE: { emoji: '🌿', label: 'LIFESTYLE', blurb: 'Rhythm, home, and presence.', face: 'bg-[#F97316]', ink: true },
+  RELATIONSHIP: { emoji: '💞', label: 'RELATIONSHIP', blurb: 'Partner, family, and care.', face: 'bg-[#E879F9]', ink: true },
   FINANCES: { emoji: '💰', label: 'FINANCES', blurb: 'Save, send, and stay liquid.', face: 'bg-[#F5C451]', ink: true },
   CAREER: { emoji: '💼', label: 'CAREER', blurb: 'Craft, clients, and deep work.', face: 'bg-[#14B8A6]', ink: true },
   FAITH: { emoji: '🙏', label: 'FAITH', blurb: 'Prayer, scripture, and stillness.', face: 'bg-[#F3E27A]', ink: true },

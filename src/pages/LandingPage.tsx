@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Check, Minus, Plus, Smartphone, X } from 'lucide-react'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
+import { PillarGlyph } from '../components/PillarGlyph'
 import {
   CMA_BODY,
   CMA_TITLE,
@@ -276,7 +277,10 @@ export function LandingPage() {
                       on ? 'bg-[#CCFF00] text-black' : 'border border-[#222222] bg-[#1A1A1A] text-white'
                     }`}
                   >
-                    {item.emoji} {item.label}
+                    <span className="inline-flex items-center gap-1.5">
+                      <PillarGlyph id={id} size={15} tone="accent" />
+                      {item.label}
+                    </span>
                   </button>
                 )
               })}
@@ -315,9 +319,12 @@ export function LandingPage() {
                     aria-label="Locks per week"
                   />
                 </label>
-                <p className="text-[13px] text-[#888888]">
-                  {meta.emoji} {meta.label} · {meta.blurb} {freq} lock{freq === 1 ? '' : 's'} each week
-                  at <span className="font-amount text-white">{formatKes(kes, 0)}</span>.
+                <p className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#888888]">
+                  <PillarGlyph id={pillar} size={16} tone="accent" />
+                  <span>
+                    {meta.label} · {meta.blurb} {freq} lock{freq === 1 ? '' : 's'} each week at{' '}
+                    <span className="font-amount text-white">{formatKes(kes, 0)}</span>.
+                  </span>
                 </p>
               </div>
               <article className="rounded-[22px] border border-[#CCFF00] bg-[#0A0A0A] p-5">
@@ -791,7 +798,9 @@ function HarvestPreview() {
                 tone={meta.ink ? 'ink' : 'white'}
                 className="text-[15px] leading-none"
               />
-              <p className="mt-1.5 text-[18px] leading-none">{meta.emoji}</p>
+              <p className="mt-1.5 flex justify-center text-[18px] leading-none">
+                <PillarGlyph id={id} size={18} tone="on-face" />
+              </p>
               <p className={`mt-1 text-[11px] font-extrabold tracking-wide ${meta.ink ? 'text-[#111111]' : 'text-white'}`}>
                 {meta.label}
               </p>

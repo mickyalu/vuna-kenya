@@ -4,6 +4,7 @@ import { parseKesInput } from '../lib/money'
 import { toKesInteger } from '../lib/mpesa'
 import { useVuna } from '../store/VunaContext'
 import { KesAmount } from './KesAmount'
+import { PillarGlyph } from './PillarGlyph'
 
 export function LockComposer() {
   const {
@@ -41,9 +42,10 @@ export function LockComposer() {
             <h2 className="mt-1 text-[22px] font-bold leading-tight text-white">
               {composer.activity || 'Name this lock'}
             </h2>
-            {pillar ? (
-              <p className="mt-1 text-[13px] text-vuna-muted">
-                {pillar.emoji} {pillar.label}
+            {composer.pillar ? (
+              <p className="mt-1 flex items-center gap-1.5 text-[13px] text-vuna-muted">
+                <PillarGlyph id={composer.pillar as PillarId} size={16} tone="accent" />
+                {pillar?.label}
               </p>
             ) : null}
           </div>

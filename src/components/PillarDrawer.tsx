@@ -1,6 +1,7 @@
 import { ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { KesAmount } from './KesAmount'
+import { PillarGlyph } from './PillarGlyph'
 import { PILLAR_CATALOG, PILLARS } from '../lib/pillars'
 import { useVuna } from '../store/VunaContext'
 
@@ -59,7 +60,7 @@ export function PillarDrawer({ swapSlot, onPick }: Props) {
                 <span
                   className={`flex h-11 w-11 items-center justify-center rounded-full text-lg ${meta.face}`}
                 >
-                  {meta.emoji}
+                  <PillarGlyph id={id} size={22} tone="on-face" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[14px] font-bold tracking-wide text-white">
