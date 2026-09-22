@@ -1,4 +1,4 @@
-import { HeartPulse } from 'lucide-react'
+import { Check, HeartPulse } from 'lucide-react'
 import { PILLAR_CATALOG, type PillarId } from '../lib/pillars'
 
 type Tone = 'on-face' | 'accent'
@@ -6,7 +6,7 @@ type Tone = 'on-face' | 'accent'
 type Props = {
   id: PillarId
   size?: number
-  /** `accent` is the red pulse on a light badge or mixed background. `on-face` sits on the rose card. */
+  /** `accent` sits on a light badge. `on-face` sits directly on the pillar color. */
   tone?: Tone
 }
 
@@ -18,6 +18,17 @@ export function PillarGlyph({ id, size = 22, tone = 'accent' }: Props) {
         strokeWidth={2.4}
         aria-hidden
         className={tone === 'on-face' ? 'text-[#111111]' : 'text-[#BE123C]'}
+      />
+    )
+  }
+
+  if (id === 'HABITS') {
+    return (
+      <Check
+        size={size}
+        strokeWidth={3}
+        aria-hidden
+        className={tone === 'on-face' ? 'text-white' : 'text-[#1E3A8A]'}
       />
     )
   }

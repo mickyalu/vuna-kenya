@@ -71,7 +71,7 @@ export function HarvestTab() {
                       : 'bg-[#111111] shadow-[0_0_0_3px_rgba(17,17,17,0.28)]'
                   }`}
                 >
-                  <PillarGlyph id={id} size={26} tone={id === 'HEALTH' ? 'accent' : 'on-face'} />
+                  <PillarGlyph id={id} size={26} tone={id === 'HEALTH' || !meta.ink ? 'accent' : 'on-face'} />
                 </span>
                 <p
                   className={`mt-2 text-[14px] font-extrabold tracking-wide ${
