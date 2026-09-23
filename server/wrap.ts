@@ -115,6 +115,7 @@ export type StoredLock = {
   amountKes: number
   habitId: string
   pillar: string
+  activity: string
   timestamp: string
   lockMonths: number
   unlocksAt: string
@@ -270,6 +271,7 @@ export async function listLocksForPhone(msisdn: string): Promise<StoredLock[]> {
       amountKes: row.amountKes,
       habitId: row.habitId,
       pillar: row.pillar,
+      activity: row.activity || '',
       timestamp: row.timestamp,
       lockMonths: row.lockMonths ?? LOCK_MONTHS,
       unlocksAt: row.unlocksAt || unlocksAtFrom(row.timestamp),
@@ -310,6 +312,7 @@ export async function listLocksForPhone(msisdn: string): Promise<StoredLock[]> {
       amountKes: row.amount_kes,
       habitId: row.habit_id,
       pillar: row.pillar || '',
+      activity: '',
       timestamp: row.occurred_at,
       lockMonths: row.lock_months || LOCK_MONTHS,
       unlocksAt: row.unlocks_at || unlocksAtFrom(row.occurred_at),

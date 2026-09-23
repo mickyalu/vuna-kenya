@@ -20,6 +20,7 @@ import {
 import { parseKesInput } from '../lib/money'
 import { assertKesInteger, isMsisdn, maskMsisdn, toKesInteger, toMsisdn } from '../lib/mpesa'
 import { describeNotify } from '../lib/notify'
+import { liveProtocolRows, pillarName, type LiveProtocolRow } from '../lib/live-protocols'
 import { accruedYieldKes, protocolLock } from '../lib/lock-math'
 import { later, every, safeDocument, safeWindow } from '../lib/runtime'
 import {
@@ -256,6 +257,7 @@ type VunaState = {
   handleBack: () => boolean
   confirmedLockKes: number
   commitmentTotal: number
+  liveProtocols: LiveProtocolRow[]
   feed: FeedPost[]
   pulseTab: 'feed' | 'leaderboard'
   setPulseTab: (tab: 'feed' | 'leaderboard') => void
@@ -476,7 +478,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
             checkoutRequestId: lock.checkoutRequestId,
             merchantRequestId: '',
             habitId: lock.habitId,
-            activity: '',
+            activity: lock.activity || '',
             pillar: lock.pillar,
             amountKes: lock.amountKes,
             kind: 'lock',
@@ -501,6 +503,29 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       cancel = true
     }
   }, [])
+
+  useEffect(() => {
+    const credits = loadCredits().filter((row) => row.kind === 'lock')
+    if (!credits.length) return
+    setLines((prev) => {
+      const ids = new Set(prev.map((line) => line.id))
+      const extra: ProtocolLine[] = []
+      for (const row of credits) {
+        if (ids.has(row.habitId)) continue
+        const pillar = (PILLARS as string[]).includes(row.pillar) ? (row.pillar as PillarId) : ''
+        extra.push({
+          id: row.habitId,
+          description: (row.activity || '').trim() || pillarName(row.pillar),
+          amount: String(row.amountKes),
+          pillar,
+          status: 'locked',
+        })
+      }
+      if (!extra.length) return prev
+      const kept = prev.filter((line) => line.description || line.amount || line.status !== 'draft')
+      return [...extra, ...kept]
+    })
+  }, [deposits])
 
   useEffect(() => {
     if (!lockPrompt) return
@@ -532,6 +557,38 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         .reduce((sum, line) => sum + parseKesInput(line.amount), 0),
     [lines],
   )
+
+  const liveProtocols = useMemo(() => {
+    const credits = loadCredits().filter((row) => row.kind === 'lock')
+    const lineById = new Map(lines.map((line) => [line.id, line]))
+    const lockedHabits = new Set(credits.map((row) => row.habitId))
+    const locked = credits.map((row) => {
+      const line = lineById.get(row.habitId)
+      const pillar = row.pillar || line?.pillar || ''
+      const name = (row.activity || line?.description || '').trim() || pillarName(pillar)
+      return {
+        id: row.checkoutRequestId || row.habitId,
+        habitId: row.habitId,
+        name,
+        pillar,
+        amountKes: row.amountKes,
+        timestamp: row.timestamp,
+        status: 'locked' as const,
+      }
+    })
+    const open = lines
+      .filter((line) => line.status !== 'locked' && (line.description || line.amount) && !lockedHabits.has(line.id))
+      .map((line) => ({
+        id: line.id,
+        habitId: line.id,
+        name: line.description || 'Unnamed habit',
+        pillar: line.pillar,
+        amountKes: parseKesInput(line.amount),
+        timestamp: null,
+        status: line.status === 'pending' ? ('pending' as const) : ('draft' as const),
+      }))
+    return liveProtocolRows([...locked, ...open], clock)
+  }, [clock, deposits, lines])
 
   const lockCredits = loadCredits().filter((row) => row.kind === 'lock')
   const yieldEarned = accruedYieldKes(lockCredits, clock)
@@ -1761,6 +1818,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     handleBack,
     confirmedLockKes,
     commitmentTotal,
+    liveProtocols,
     feed,
     pulseTab,
     setPulseTab,

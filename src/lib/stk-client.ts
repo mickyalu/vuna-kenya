@@ -48,6 +48,7 @@ export type ServerLock = {
   amountKes: number
   habitId: string
   pillar: string
+  activity?: string
   timestamp: string
   lockMonths: number
   unlocksAt: string

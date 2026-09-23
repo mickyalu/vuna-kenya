@@ -26,6 +26,7 @@ export type CreditRow = {
   kind: StkKind
   habitId: string
   pillar: string
+  activity: string
   timestamp: string
 }
 
@@ -61,6 +62,7 @@ export function rememberCredit(status: PublicStkStatus): { added: boolean; credi
       kind: status.kind,
       habitId: status.habitId,
       pillar: status.pillar,
+      activity: status.activity || '',
       timestamp: status.timestamp,
     },
     ...credits,
