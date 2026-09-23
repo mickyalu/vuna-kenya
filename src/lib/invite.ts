@@ -40,10 +40,13 @@ export function renderJoinPage(input: {
   const image = `${origin}/og/vuna-invite.png`
   const ref = input.ref?.trim() || ''
   const club = input.club
+  const people = club
+    ? club.live === 1
+      ? '1 person is already there.'
+      : `${club.live} people are already there.`
+    : ''
   const title = club ? `Sit with ${club.name}` : 'A seat on VUNA'
-  const description = club
-    ? `${club.line} ${club.live === 1 ? '1 person is already there.' : `${club.live} people are already there.`}`
-    : 'Come lock one habit with a VUNA tribe.'
+  const description = club ? `${club.line} ${people}` : 'Come lock one habit with a VUNA tribe.'
   const canonical = inviteLink(origin, input.slug, ref || null)
   const appUrl = new URL('/app', origin)
   appUrl.searchParams.set('join', input.slug)
@@ -53,7 +56,7 @@ export function renderJoinPage(input: {
     ? `<p class="eyebrow">VUNA · A SEAT IS OPEN</p>
        <h1>${escapeHtml(club.name)}</h1>
        <p class="line">${escapeHtml(club.line)}</p>
-       <p class="proof">${escapeHtml(description)}</p>
+       <p class="proof">${escapeHtml(people)}</p>
        ${ref ? `<p class="from">${escapeHtml(ref)} kept you a seat.</p>` : ''}
        <a class="cta" href="${escapeHtml(appUrl.toString())}">Join ${escapeHtml(club.name)}</a>
        <p class="next">One tap. You sit with them on Harvest.</p>`

@@ -37,4 +37,7 @@ test('the join page carries a WhatsApp image and one join button', () => {
   assert.match(html, /join=5am-club/)
   assert.match(html, /ref=Michael\.A/)
   assert.match(html, /ready=1/)
+  const proof = html.split('class="proof"')[1].split('</p>')[0]
+  assert.match(proof, /3 people are already there/)
+  assert.doesNotMatch(proof, /Karura/)
 })
