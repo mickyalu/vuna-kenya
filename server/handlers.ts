@@ -12,7 +12,8 @@ import { applyCallback, asPublic, getByCheckout, insertPending, newIds } from '.
 import { logError, logInfo, logWarn } from './log.ts'
 import { allowStkPush, bindCheckout, checkoutMsisdn, clearPendingPush, releaseCheckout } from './rate-limit.ts'
 import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts'
-import { cronAuthorized, listLocksForPhone, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
+import { giftAccountReference, normalizeRecipientHandle } from '../src/lib/gift.ts'
+import { cronAuthorized, listLocksForPhone, recordGiftEvent, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
   const headers = new Headers(extra)
@@ -57,6 +58,16 @@ function mockSettle(checkoutRequestId: string) {
         mpesaReceipt: row.mpesaReceipt,
         occurredAt: row.timestamp,
       }).catch(() => logError('lock event not stored'))
+    }
+    if (applied?.firstCredit && row?.kind === 'gift' && msisdn && row.recipientHandle) {
+      void recordGiftEvent({
+        senderMsisdn: msisdn,
+        recipientHandle: row.recipientHandle,
+        amountKes: row.amountKes,
+        checkoutRequestId: row.checkoutRequestId,
+        mpesaReceipt: row.mpesaReceipt,
+        occurredAt: row.timestamp,
+      }).catch(() => logError('gift event not stored'))
     }
     releaseCheckout(checkoutRequestId)
   }
@@ -124,11 +135,17 @@ export async function handleStkPush(req: Request) {
   const kind: StkKind = body.kind === 'gift' ? 'gift' : 'lock'
   if (!habitId || !activity) return error('Habit and activity are required.')
 
+  let recipientHandle: string | null = null
+  let accountReference = (body.accountReference || 'VUNA').slice(0, 12)
+  if (kind === 'gift') {
+    recipientHandle = normalizeRecipientHandle(body.recipientHandle || '')
+    if (!recipientHandle) return error('Choose who receives this gift.')
+    accountReference = giftAccountReference(recipientHandle)
+  }
+
   const ids = newIds()
   const blocked = allowStkPush(resolved.msisdn)
   if (blocked) return error(blocked, 429)
-
-  const accountReference = (body.accountReference || (kind === 'gift' ? 'GIFT' : 'VUNA')).slice(0, 12)
   const live = darajaConfigured()
   let checkoutRequestId = ids.checkoutRequestId
   let merchantRequestId = ids.merchantRequestId
@@ -162,6 +179,7 @@ export async function handleStkPush(req: Request) {
     merchantRequestId,
     kind,
     accountReference,
+    recipientHandle,
   })
   bindCheckout(checkoutRequestId, resolved.msisdn)
 
@@ -255,6 +273,24 @@ export async function handleStkCallback(req: Request) {
         })
       } catch {
         logError('lock event not stored')
+      }
+    }
+  }
+
+  if (applied.firstCredit && applied.row.kind === 'gift') {
+    const msisdn = checkoutMsisdn(parsed.checkoutRequestId)
+    if (msisdn && applied.row.recipientHandle) {
+      try {
+        await recordGiftEvent({
+          senderMsisdn: msisdn,
+          recipientHandle: applied.row.recipientHandle,
+          amountKes: applied.row.amountKes,
+          checkoutRequestId: applied.row.checkoutRequestId,
+          mpesaReceipt: applied.row.mpesaReceipt,
+          occurredAt: applied.row.timestamp,
+        })
+      } catch {
+        logError('gift event not stored')
       }
     }
   }

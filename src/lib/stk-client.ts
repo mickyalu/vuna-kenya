@@ -29,6 +29,7 @@ export async function pushStk(input: {
   pillar: string
   kind: StkKind
   accountReference?: string
+  recipientHandle?: string
 }): Promise<StkPushResponse> {
   const res = await fetch('/api/stk/push', {
     method: 'POST',

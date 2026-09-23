@@ -74,6 +74,7 @@ function publicView(row: LedgerEntry): PublicStkStatus {
     mpesaReceipt: row.mpesaReceipt,
     timestamp: row.timestamp,
     msisdnMasked: row.msisdnMasked,
+    recipientHandle: row.recipientHandle ?? null,
     ...protocolUnlock(row),
   }
 }
@@ -94,6 +95,7 @@ export function insertPending(input: {
   merchantRequestId: string
   kind: StkKind
   accountReference: string
+  recipientHandle?: string | null
 }): LedgerEntry {
   ensure()
   const row: LedgerEntry = {
@@ -112,6 +114,7 @@ export function insertPending(input: {
     kind: input.kind,
     credited: false,
     accountReference: input.accountReference,
+    recipientHandle: input.recipientHandle ?? null,
   }
   mem.byCheckout[row.checkoutRequestId] = row
   persist()

@@ -17,6 +17,8 @@ export type LedgerEntry = {
   kind: StkKind
   credited: boolean
   accountReference: string
+  /** Set on gifts. This is who receives the money, not the payer. */
+  recipientHandle: string | null
 }
 
 export type PublicStkStatus = {
@@ -33,6 +35,7 @@ export type PublicStkStatus = {
   mpesaReceipt: string | null
   timestamp: string
   msisdnMasked: string
+  recipientHandle?: string | null
   lockMonths?: number
   unlocksAt?: string | null
 }
@@ -45,6 +48,7 @@ export type StkPushRequest = {
   pillar: string
   kind: StkKind
   accountReference?: string
+  recipientHandle?: string
 }
 
 export type StkPushResponse = {

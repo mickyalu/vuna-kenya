@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { normalizeRecipientHandle } from '../src/lib/gift.ts'
 import { LOCK_MONTHS, unlocksAtFrom } from '../src/lib/lock-math.ts'
 import { maskMsisdn } from '../shared/mask.ts'
 import { toMsisdn } from '../shared/phone.ts'
@@ -187,6 +188,61 @@ export async function recordLockEvent(input: {
   }
   logInfo('lock stored', maskMsisdn(input.msisdn))
   return { unlocksAt, stored: 'supabase' as const }
+}
+
+async function findProfileIdByHandle(handle: string): Promise<string | null> {
+  const bare = handle.replace(/^@/, '')
+  try {
+    const rows = await supabaseRest<{ id: string }[]>(
+      `/rest/v1/profiles?or=(handle.eq.${encodeURIComponent(handle)},handle.eq.${encodeURIComponent(bare)})&select=id&limit=1`,
+    )
+    return rows[0]?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Credits the chosen recipient. sender_profile_id is only who paid.
+ * This never writes habit_events, so the gift does not become the sender's lock.
+ */
+export async function recordGiftEvent(input: {
+  senderMsisdn: string
+  recipientHandle: string
+  amountKes: number
+  checkoutRequestId: string
+  mpesaReceipt: string | null
+  occurredAt: string
+}) {
+  const recipientHandle = normalizeRecipientHandle(input.recipientHandle)
+  if (!recipientHandle) throw new Error('Gift needs a recipient.')
+  if (!supabaseConfigured()) {
+    logInfo('gift kept on ledger', recipientHandle)
+    return { stored: 'ledger' as const, recipientHandle, amountKes: input.amountKes }
+  }
+  const senderProfileId = await ensureProfileId(input.senderMsisdn)
+  const recipientProfileId = await findProfileIdByHandle(recipientHandle)
+  try {
+    await supabaseRest('/rest/v1/gifts', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify({
+        recipient_handle: recipientHandle,
+        recipient_profile_id: recipientProfileId,
+        sender_profile_id: senderProfileId,
+        amount_kes: input.amountKes,
+        checkout_request_id: input.checkoutRequestId,
+        mpesa_receipt: input.mpesaReceipt,
+        status: 'success',
+        occurred_at: input.occurredAt,
+      }),
+    })
+  } catch {
+    logInfo('gift stored without gifts table — apply 003_gifts.sql', recipientHandle)
+    return { stored: 'ledger' as const, recipientHandle, amountKes: input.amountKes }
+  }
+  logInfo('gift stored', recipientHandle)
+  return { stored: 'supabase' as const, recipientHandle, amountKes: input.amountKes }
 }
 
 function shareUnlock(locks: StoredLock[]): StoredLock[] {

@@ -1,8 +1,8 @@
 import { X } from 'lucide-react'
-import { DEFAULT_GIFT_AMOUNT, GIFT_AMOUNTS, VUNA_PAYBILL } from '../lib/paybill'
-import { KesAmount } from './KesAmount'
-import { PersonAvatar } from './PersonAvatar'
+import { toKesInteger } from '../lib/mpesa'
+import { GIFT_AMOUNTS } from '../lib/paybill'
 import { useVuna } from '../store/VunaContext'
+import { PersonAvatar } from './PersonAvatar'
 
 export function GiftSheet() {
   const {
@@ -20,6 +20,7 @@ export function GiftSheet() {
   if (!post) return null
 
   const sending = giftDraft.sending
+  const kes = toKesInteger(giftDraft.amount)
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center">
@@ -58,30 +59,39 @@ export function GiftSheet() {
           </div>
         </div>
 
-        <p className="mb-3 text-[13px] leading-snug text-vuna-muted">
-          This is not a protocol lock. M-Pesa pays VUNA paybill{' '}
-          <span className="font-semibold text-white">{VUNA_PAYBILL}</span>, account {post.handle}. We
-          credit their profile wallet live.
-        </p>
-
         <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">AMOUNT</p>
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {GIFT_AMOUNTS.map((kes) => (
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          {GIFT_AMOUNTS.map((preset) => (
             <button
-              key={kes}
+              key={preset}
               type="button"
               disabled={sending}
-              onClick={() => setGiftAmount(kes)}
+              onClick={() => setGiftAmount(String(preset))}
               className={`rounded-2xl py-3 font-amount text-[18px] ${
-                giftDraft.amount === kes
+                kes === preset
                   ? 'bg-vuna-lime text-black'
                   : 'bg-vuna-raised text-white'
               }`}
             >
-              {kes}
+              {preset}
             </button>
           ))}
         </div>
+
+        <label className="mb-4 block rounded-2xl bg-vuna-raised px-4 py-3">
+          <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+            OR TYPE KES
+          </span>
+          <input
+            inputMode="numeric"
+            value={giftDraft.amount}
+            onChange={(e) => setGiftAmount(e.target.value)}
+            placeholder="100"
+            disabled={sending}
+            aria-label="Gift amount in shillings"
+            className="font-amount mt-1 w-full bg-transparent text-[32px] leading-none text-vuna-lime outline-none placeholder:text-vuna-dim"
+          />
+        </label>
 
         <label className="mb-3 block rounded-2xl border border-vuna-border bg-vuna-card px-4 py-3">
           <span className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
@@ -100,28 +110,16 @@ export function GiftSheet() {
         {giftDraft.error ? (
           <p className="mb-3 text-[12px] text-[#f07167]">{giftDraft.error}</p>
         ) : sending ? (
-          <p className="mb-3 text-[12px] leading-snug text-vuna-mint">
-            Waiting for the paybill callback. Gift wallet moves only after ResultCode 0.
-            {giftDraft.checkoutRequestId ? (
-              <span className="mt-1 block font-mono text-[11px] text-vuna-dim">
-                {giftDraft.checkoutRequestId}
-              </span>
-            ) : null}
-          </p>
-        ) : (
-          <p className="mb-3 text-[12px] text-vuna-dim">
-            STK to paybill {VUNA_PAYBILL} · KES {giftDraft.amount} even shillings. Protocol stays
-            untouched.
-          </p>
-        )}
+          <p className="mb-3 text-[12px] text-vuna-mint">Waiting for M-Pesa…</p>
+        ) : null}
 
         <button
           type="button"
           onClick={sendGift}
-          disabled={sending}
+          disabled={sending || kes < 1}
           className="w-full rounded-full bg-vuna-lime py-3.5 text-[15px] font-semibold text-black disabled:opacity-60"
         >
-          {sending ? 'Waiting for M-Pesa…' : `Send KES ${giftDraft.amount} to paybill`}
+          {sending ? 'Waiting for M-Pesa…' : `Send KES ${kes || 0}`}
         </button>
         <button
           type="button"
@@ -131,9 +129,6 @@ export function GiftSheet() {
         >
           Cancel
         </button>
-        <p className="pb-1 text-center text-[11px] text-vuna-dim">
-          They will see <KesAmount value={giftDraft.amount || DEFAULT_GIFT_AMOUNT} className="text-[11px]" /> on Pulse, from you.
-        </p>
       </div>
     </div>
   )

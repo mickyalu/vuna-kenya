@@ -17,7 +17,7 @@ import {
   type Club,
 } from '../lib/tribes'
 import { parseKesInput } from '../lib/money'
-import { isMsisdn, maskMsisdn, toKesInteger, toMsisdn } from '../lib/mpesa'
+import { assertKesInteger, isMsisdn, maskMsisdn, toKesInteger, toMsisdn } from '../lib/mpesa'
 import { describeNotify } from '../lib/notify'
 import { accruedYieldKes, protocolLock } from '../lib/lock-math'
 import { later, every, safeDocument, safeWindow } from '../lib/runtime'
@@ -54,6 +54,7 @@ import type {
   Visibility,
 } from '../types'
 import type { PublicStkStatus } from '../../shared/stk-types'
+import { giftAccountReference } from '../lib/gift'
 import { DEFAULT_GIFT_AMOUNT } from '../lib/paybill'
 
 const GOAL_TARGET_KES = 43750
@@ -234,7 +235,7 @@ type VunaState = {
   giftDraft: GiftDraft
   openGift: (postId: string) => void
   closeGift: () => void
-  setGiftAmount: (amount: 10 | 20 | 50) => void
+  setGiftAmount: (amount: string) => void
   sendGift: () => void
   replyGift: (postId: string, message: string) => void
   giftWallet: number
@@ -332,7 +333,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [giftDraft, setGiftDraft] = useState<GiftDraft>({
     open: false,
     postId: null,
-    amount: DEFAULT_GIFT_AMOUNT,
+    amount: String(DEFAULT_GIFT_AMOUNT),
     sending: false,
     checkoutRequestId: null,
     error: null,
@@ -606,7 +607,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           unread: true,
         })
       } else if (status.kind === 'gift') {
-        const toHandle = pending?.giftTo || 'a friend'
+        const toHandle = status.recipientHandle || pending?.giftTo || 'a friend'
         setFeed((prev) => [
           {
             id: uid(),
@@ -917,7 +918,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setGiftDraft({
       open: true,
       postId,
-      amount: DEFAULT_GIFT_AMOUNT,
+      amount: String(DEFAULT_GIFT_AMOUNT),
       sending: false,
       checkoutRequestId: null,
       error: null,
@@ -928,8 +929,9 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setGiftDraft((g) => (g.sending ? g : { ...g, open: false, postId: null, error: null }))
   }, [])
 
-  const setGiftAmount = useCallback((amount: 10 | 20 | 50) => {
-    setGiftDraft((g) => (g.sending ? g : { ...g, amount, error: null }))
+  const setGiftAmount = useCallback((amount: string) => {
+    const digits = amount.replace(/\D/g, '').slice(0, 6)
+    setGiftDraft((g) => (g.sending ? g : { ...g, amount: digits, error: null }))
   }, [])
 
   const sendGift = useCallback(async () => {
@@ -940,9 +942,18 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       setGiftDraft((g) => ({ ...g, error: 'Add your Safaricom number so the STK can land.' }))
       return
     }
-    const kes = toKesInteger(giftDraft.amount)
     const toHandle = post.handle
-    setGiftDraft((g) => ({ ...g, sending: true, error: null }))
+    let kes: number
+    try {
+      kes = assertKesInteger(giftDraft.amount)
+    } catch (err) {
+      setGiftDraft((g) => ({
+        ...g,
+        error: err instanceof Error ? err.message : 'Enter a whole-shilling amount.',
+      }))
+      return
+    }
+    setGiftDraft((g) => ({ ...g, sending: true, error: null, amount: String(kes) }))
     try {
       const pushed = await pushStk({
         phone: mpesaPhone || undefined,
@@ -951,7 +962,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         activity: `Vuna Gift ${toHandle}`,
         pillar: 'COMMUNITY',
         kind: 'gift',
-        accountReference: 'GIFT',
+        recipientHandle: toHandle,
+        accountReference: giftAccountReference(toHandle),
       })
       const pending: PendingStk = {
         checkoutRequestId: pushed.checkoutRequestID,

@@ -237,9 +237,7 @@ function GiftCard({
         <KesAmount value={kes} tone="lime" className="text-[18px]" />
       </div>
       <p className="mt-3 text-[13px] leading-snug text-vuna-muted">
-        {incoming
-          ? 'On your profile wallet. Not a protocol lock. Reply if you want.'
-          : 'Paid to VUNA paybill, credited to their profile. Live on their Pulse.'}
+        {incoming ? 'On your profile. Reply if you want.' : `Credited to ${post.giftTo}.`}
       </p>
       {post.giftReply ? (
         <p className="mt-3 rounded-2xl bg-black/30 px-3 py-2.5 text-[13px] text-white">

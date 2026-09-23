@@ -92,7 +92,7 @@ export type InAppNotice = {
 export type GiftDraft = {
   open: boolean
   postId: string | null
-  amount: 10 | 20 | 50
+  amount: string
   sending: boolean
   checkoutRequestId: string | null
   error: string | null

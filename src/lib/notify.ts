@@ -7,9 +7,9 @@
  * - Web push: optional later for desktop; poor reach on cheap Androids vs WhatsApp.
  *
  * Vuna Gift is not a protocol lock
- * 1. Sender picks 10 / 20 / 50. Money never leaves protocol deposits.
+ * 1. Sender picks 100 / 200 / 500 or types a whole-shilling amount.
  * 2. Daraja STK Push (C2B) to VUNA paybill 400200, account = recipient handle.
- * 3. Paybill webhook credits recipient.gift_wallet on their profile.
+ * 3. Callback writes public.gifts for that recipient. It does not write the sender's habit_events.
  * 4. Realtime insert on Pulse (gift card: from, amount). Recipient can reply.
  * 5. Reply writes an in-app + WhatsApp notice back to the sender.
  *
