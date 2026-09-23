@@ -25,11 +25,11 @@ export function TribeHub() {
       <div className="mb-3 flex items-end justify-between gap-2">
         <div>
           <h2 className="text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">TRIBES</h2>
-          <p className="mt-1 text-[13px] leading-snug text-vuna-muted">
-            {mine.length === 0
-              ? 'Join one or start one. This is the only list of tribes.'
-              : `You sit in ${activeClub.name}. Harvest highlights that one. Pulse shows only its activity.`}
-          </p>
+          {mine.length === 0 ? (
+            <p className="mt-1 text-[13px] leading-snug text-vuna-muted">
+              Join one or start one. This is the only list of tribes.
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
