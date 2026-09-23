@@ -7,6 +7,7 @@ export function TribeChip({
   onClick,
   youUrl,
   youName,
+  people,
   compact = false,
   label,
 }: {
@@ -14,15 +15,16 @@ export function TribeChip({
   onClick: () => void
   youUrl?: string
   youName?: string
+  people?: { src: string; alt: string }[]
   compact?: boolean
   label?: string
 }) {
-  const faces = [
-    youUrl
-      ? { src: youUrl, alt: youName || 'You' }
-      : null,
-    ...tribe.members.map((m) => ({ src: m.photo, alt: m.name })),
-  ].filter(Boolean) as { src: string; alt: string }[]
+  const faces = people
+    ? people.filter((face) => face.src && face.alt)
+    : ([
+        youUrl ? { src: youUrl, alt: youName || 'You' } : null,
+        ...tribe.members.map((member) => ({ src: member.photo, alt: member.name })),
+      ].filter(Boolean) as { src: string; alt: string }[])
 
   return (
     <button
@@ -31,11 +33,11 @@ export function TribeChip({
       aria-label={label ? `${label}, ${tribe.name}. Open tribes on Profile.` : tribe.name}
       className={
         compact
-          ? 'flex items-center gap-2 rounded-full border border-vuna-border bg-vuna-raised py-1 pl-1 pr-3'
+          ? `flex items-center gap-2 rounded-full border border-vuna-border bg-vuna-raised py-1 pr-3 ${faces.length ? 'pl-1' : 'pl-3'}`
           : 'rounded-[22px] border border-vuna-border bg-vuna-raised px-3 py-2 text-left'
       }
     >
-      <AvatarStack faces={faces} size={compact ? 28 : 36} />
+      {faces.length ? <AvatarStack faces={faces} size={compact ? 28 : 36} /> : null}
       <span className={compact ? 'text-left' : 'mt-1.5 block text-center'}>
         {label ? (
           <span className="block text-[9px] font-semibold tracking-[0.12em] text-vuna-dim">

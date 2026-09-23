@@ -301,6 +301,7 @@ type VunaState = {
   setActiveTribe: (id: PillarId) => void
   clubs: Club[]
   joinedIds: string[]
+  tribeRoster: { name: string; photo: string; handle: string }[]
   activeClub: Club
   setActiveClub: (id: string) => void
   joinClub: (id: string) => void
@@ -423,6 +424,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [activeClubId, setActiveClubId] = useState(
     () => readStore('vuna-active-club') || 'FITNESS',
   )
+  const [tribeRoster, setTribeRoster] = useState<{ name: string; photo: string; handle: string }[]>([])
+  const rosterSlug = useRef('')
   const [lockPrompt, setLockPrompt] = useState<string | null>(null)
   const [liveOpen, setLiveOpen] = useState(false)
   const [avatarId, setAvatarIdState] = useState(() => {
@@ -580,6 +583,43 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       CATALOG_CLUBS[0]
     )
   }, [clubs, activeClubId, joinedIds])
+
+  useEffect(() => {
+    let cancel = false
+    const slug = activeClub.inviteSlug
+    if (rosterSlug.current !== slug) {
+      rosterSlug.current = slug
+      setTribeRoster([])
+    }
+    async function syncRoster() {
+      if (cardName) {
+        await fetch('/api/tribes/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            handle: cardName,
+            name: cardName,
+            photo: avatarUrl,
+          }),
+        }).catch(() => undefined)
+      }
+      if (cancel) return
+      try {
+        const res = await fetch(`/api/tribes/members?slug=${encodeURIComponent(slug)}`)
+        if (!res.ok || cancel) return
+        const body = (await res.json()) as { members?: { name: string; photo: string; handle: string }[] }
+        if (cancel) return
+        setTribeRoster(Array.isArray(body.members) ? body.members : [])
+      } catch {
+        /* the pill keeps the saved name until the roster answers */
+      }
+    }
+    void syncRoster()
+    return () => {
+      cancel = true
+    }
+  }, [activeClub.inviteSlug, avatarUrl, cardName])
 
   const updateLine = useCallback((id: string, patch: Partial<ProtocolLine>) => {
     setLines((prev) => prev.map((line) => (line.id === id ? { ...line, ...patch } : line)))
@@ -1766,6 +1806,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setActiveTribe,
     clubs,
     joinedIds,
+    tribeRoster,
     activeClub,
     setActiveClub,
     joinClub,

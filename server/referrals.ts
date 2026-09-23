@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { INVITE_REWARD_KES } from '../src/lib/invite.ts'
+import { isUploadedPhoto } from '../src/lib/avatars.ts'
 import { normalizeRecipientHandle } from '../src/lib/gift.ts'
 import { logInfo } from './log.ts'
 
@@ -15,7 +16,15 @@ export type ReferralCredit = {
   createdAt: string
 }
 
-type Store = { credits: ReferralCredit[]; tribes: PublicTribe[] }
+type Store = { credits: ReferralCredit[]; tribes: PublicTribe[]; members: TribeRosterMember[] }
+
+export type TribeRosterMember = {
+  slug: string
+  handle: string
+  name: string
+  photo: string
+  updatedAt: string
+}
 
 export type PublicTribe = {
   slug: string
@@ -28,13 +37,13 @@ export type PublicTribe = {
 }
 
 function empty(): Store {
-  return { credits: [], tribes: [] }
+  return { credits: [], tribes: [], members: [] }
 }
 
 function load(): Store {
   try {
     const parsed = JSON.parse(readFileSync(FILE, 'utf8')) as Store
-    return { credits: parsed.credits ?? [], tribes: parsed.tribes ?? [] }
+    return { credits: parsed.credits ?? [], tribes: parsed.tribes ?? [], members: parsed.members ?? [] }
   } catch {
     return empty()
   }
@@ -84,6 +93,110 @@ export function findPublishedTribe(slug: string) {
 
 export function listPublicTribes() {
   return load().tribes.filter((item) => item.access !== 'private')
+}
+
+function rosterPhoto(photo: string) {
+  const value = photo.trim()
+  if (/^\/faces\/[a-z0-9-]+\.jpg$/.test(value)) return value
+  if (isUploadedPhoto(value)) return value
+  return null
+}
+
+export async function joinTribeRoster(input: { slug: string; handle: string; name: string; photo: string }) {
+  const slug = input.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40)
+  const handle = normalizeRecipientHandle(input.handle)
+  const name = input.name.trim().replace(/\s+/g, ' ').slice(0, 40)
+  const photo = rosterPhoto(input.photo)
+  if (!slug || !handle || !name || !photo) return null
+  const data = load()
+  const next: TribeRosterMember = {
+    slug,
+    handle,
+    name,
+    photo,
+    updatedAt: new Date().toISOString(),
+  }
+  const rest = (data.members ?? []).filter(
+    (member) => !(member.slug === slug && member.handle.toLowerCase() === handle.toLowerCase()),
+  )
+  data.members = [next, ...rest].slice(0, 200)
+  save(data)
+  await upsertRosterMember(next)
+  return next
+}
+
+function localRoster(slug: string) {
+  return (load().members ?? []).filter((member) => member.slug === slug).slice(0, 12)
+}
+
+export async function tribeRoster(slug: string) {
+  const key = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '')
+  if (!key) return []
+  const remote = await readRoster(key)
+  if (remote) return remote
+  return localRoster(key)
+}
+
+async function upsertRosterMember(member: TribeRosterMember) {
+  if (!supabaseReady()) return
+  try {
+    const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/tribe_members?on_conflict=slug,handle`, {
+      method: 'POST',
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        slug: member.slug,
+        handle: member.handle,
+        name: member.name,
+        photo: member.photo,
+        updated_at: member.updatedAt,
+      }),
+    })
+    if (!res.ok) logInfo('tribe roster kept locally — apply 004_tribe_members.sql')
+  } catch {
+    logInfo('tribe roster kept locally — apply 004_tribe_members.sql')
+  }
+}
+
+async function readRoster(slug: string): Promise<TribeRosterMember[] | null> {
+  if (!supabaseReady()) return null
+  try {
+    const res = await fetch(
+      `${process.env.SUPABASE_URL}/rest/v1/tribe_members?slug=eq.${encodeURIComponent(slug)}&select=slug,handle,name,photo,updated_at&order=updated_at.desc&limit=12`,
+      {
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          Accept: 'application/json',
+        },
+      },
+    )
+    if (!res.ok) return null
+    const rows = (await res.json()) as {
+      slug?: string
+      handle?: string
+      name?: string
+      photo?: string
+      updated_at?: string
+    }[]
+    if (!Array.isArray(rows)) return null
+    return rows
+      .map((row) => ({
+        slug: String(row.slug || slug),
+        handle: String(row.handle || ''),
+        name: String(row.name || ''),
+        photo: String(row.photo || ''),
+        updatedAt: String(row.updated_at || ''),
+      }))
+      .filter((row) => row.name && row.photo)
+      .slice(0, 12)
+  } catch {
+    return null
+  }
 }
 
 function supabaseReady() {

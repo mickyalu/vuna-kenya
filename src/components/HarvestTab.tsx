@@ -7,6 +7,7 @@ import { ActivitySheet } from './ActivitySheet'
 import { LiveProtocols } from './LiveProtocols'
 import { PillarDrawer } from './PillarDrawer'
 import { ProtocolCard } from './ProtocolCard'
+import { pillPeople } from '../lib/tribes'
 import { TribeChip } from './TribeChip'
 
 export function HarvestTab() {
@@ -19,6 +20,7 @@ export function HarvestTab() {
     openTribes,
     avatarUrl,
     cardName,
+    tribeRoster,
   } = useVuna()
   const [swapSlot, setSwapSlot] = useState(0)
   const [activityPillar, setActivityPillar] = useState<PillarId | null>(null)
@@ -37,8 +39,7 @@ export function HarvestTab() {
           <TribeChip
             tribe={tribe}
             onClick={openTribes}
-            youUrl={avatarUrl}
-            youName={cardName ?? undefined}
+            people={pillPeople(tribeRoster, cardName ? { name: cardName, photo: avatarUrl } : null)}
             compact
             label="Your tribe"
           />

@@ -15,7 +15,7 @@ import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts
 import { giftAccountReference, normalizeRecipientHandle } from '../src/lib/gift.ts'
 import { renderJoinPage } from '../src/lib/invite.ts'
 import { CATALOG_CLUBS } from '../src/lib/tribes.ts'
-import { claimInviteReward, findPublishedTribe, listPublicTribes, publishTribe, referralBalance } from './referrals.ts'
+import { claimInviteReward, findPublishedTribe, joinTribeRoster, listPublicTribes, publishTribe, referralBalance, tribeRoster } from './referrals.ts'
 import { cronAuthorized, listLocksForPhone, recordGiftEvent, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
@@ -454,6 +454,35 @@ export async function handlePublicTribe(req: Request) {
   return json(saved)
 }
 
+export async function handleTribeMembers(req: Request) {
+  if (req.method === 'GET') {
+    const slug = new URL(req.url).searchParams.get('slug') || ''
+    const members = await tribeRoster(slug)
+    return json({
+      members: members.map((member) => ({
+        name: member.name,
+        photo: member.photo,
+        handle: member.handle,
+      })),
+    })
+  }
+  if (req.method !== 'POST') return error('Method not allowed', 405)
+  let body: { slug?: string; handle?: string; name?: string; photo?: string } = {}
+  try {
+    body = (await req.json()) as typeof body
+  } catch {
+    return error('Invalid JSON')
+  }
+  const saved = await joinTribeRoster({
+    slug: String(body.slug || ''),
+    handle: String(body.handle || ''),
+    name: String(body.name || ''),
+    photo: String(body.photo || ''),
+  })
+  if (!saved) return error('A saved name, photo, and tribe are required.')
+  return json({ name: saved.name, photo: saved.photo, handle: saved.handle })
+}
+
 export async function handleReferrals(req: Request) {
   if (req.method === 'GET') {
     const handle = new URL(req.url).searchParams.get('handle') || ''
@@ -496,6 +525,7 @@ export async function handleApi(req: Request): Promise<Response | null> {
   if (path === '/api/profile/wrap') return handleProfileWrap(req)
   if (path === '/api/cron/friday-wrap') return handleFridayWrap(req)
   if (path === '/api/referrals') return handleReferrals(req)
+  if (path === '/api/tribes/members') return handleTribeMembers(req)
   if (path === '/api/tribes') return handlePublicTribe(req)
   if (path.startsWith('/join/') || path.startsWith('/api/join/')) return handleJoinPage(req)
   return null

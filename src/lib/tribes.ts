@@ -177,6 +177,19 @@ export const TRIBES: Record<PillarId, Tribe> = {
   },
 }
 
+export function pillPeople(
+  roster: { name: string; photo: string }[],
+  you: { name: string; photo: string } | null,
+) {
+  const people = roster
+    .filter((member) => member.name && member.photo)
+    .map((member) => ({ alt: member.name, src: member.photo }))
+  if (you?.name && you.photo && !people.some((person) => person.alt === you.name)) {
+    people.unshift({ alt: you.name, src: you.photo })
+  }
+  return people.slice(0, 4)
+}
+
 export function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tribe'
 }
