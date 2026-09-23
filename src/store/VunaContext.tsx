@@ -279,6 +279,9 @@ type VunaState = {
   leaveClub: (id: string) => void
   createClub: (input: { name: string; line: string; pillar: PillarId }) => void
   inviteClub: (id: string) => void
+  pendingInvite: { slug: string; ref: string | null; club: Club | null } | null
+  acceptInvite: () => void
+  dismissInvite: () => void
   optOutTribes: () => void
   eraseDevice: () => void
   chooseActivity: (pillar: PillarId, activity: string) => void
@@ -330,6 +333,12 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [wrapEnabled, setWrapEnabledState] = useState(
     () => readStore('vuna-wrap') !== 'off',
   )
+  const [pendingInvite, setPendingInvite] = useState<{
+    slug: string
+    ref: string | null
+    club: Club | null
+  } | null>(null)
+  const [referralKes, setReferralKes] = useState(0)
   const [giftDraft, setGiftDraft] = useState<GiftDraft>({
     open: false,
     postId: null,
@@ -347,6 +356,22 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     () => (readStore('vuna-last-initial') || 'A').slice(0, 1).toUpperCase(),
   )
   const cardName = cardholderName(firstName, lastInitial)
+
+  useEffect(() => {
+    let cancel = false
+    void fetch(`/api/referrals?handle=${encodeURIComponent(cardName)}`)
+      .then(async (res) => {
+        if (!res.ok) return { totalKes: 0 }
+        return (await res.json()) as { totalKes?: number }
+      })
+      .then((row) => {
+        if (!cancel) setReferralKes(row.totalKes ?? 0)
+      })
+      .catch(() => {})
+    return () => {
+      cancel = true
+    }
+  }, [cardName])
   const [profileEditOpen, setProfileEditOpen] = useState(false)
   const [balanceHidden, setBalanceHidden] = useState(
     () => readStore('vuna-hide-balance') === 'on',
@@ -439,41 +464,6 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     if (!notice) return
     return later(() => setNotice(null), 8000)
   }, [notice])
-
-  useEffect(() => {
-    const w = safeWindow()
-    if (!w) return
-    const params = new URLSearchParams(w.location.search)
-    const token = params.get('join')
-    if (!token) return
-    const custom = readJson<Club[]>('vuna-custom-clubs', [])
-    const club = [...CATALOG_CLUBS, ...custom].find((c) => c.inviteSlug === token || c.id === token)
-    if (club) {
-      setJoinedIds((prev) => {
-        const next = prev.includes(club.id) ? prev : [...prev, club.id]
-        writeStore('vuna-joined-clubs', JSON.stringify(next))
-        return next
-      })
-      setActiveClubId(club.id)
-      writeStore('vuna-active-club', club.id)
-      setActiveTribePillar(club.pillar)
-      setTab('profile')
-      const item = {
-        id: uid(),
-        kind: 'tribe' as const,
-        title: `Joined ${club.name}`,
-        body: 'You are in the circle. Invite from Profile when you want more people.',
-        unread: true,
-      }
-      setInbox((prev) => [item, ...prev])
-      setNotice(item)
-    }
-    try {
-      w.history.replaceState({}, '', w.location.pathname)
-    } catch {
-      /* Mini App */
-    }
-  }, [])
 
   useEffect(() => {
     const legacy = readStore('vuna-mpesa')
@@ -1024,10 +1014,11 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const unreadCount = useMemo(() => inbox.filter((n) => n.unread).length, [inbox])
   const giftWallet = useMemo(
     () =>
+      referralKes +
       feed
         .filter((p) => p.kind === 'gift' && (p.giftTo === 'you' || p.giftTo === `@${cardName}`))
         .reduce((sum, p) => sum + (p.giftKes ?? 0), 0),
-    [feed, cardName],
+    [feed, cardName, referralKes],
   )
 
   const setActiveClub = useCallback(
@@ -1086,7 +1077,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const club = clubs.find((item) => item.id === id)
       if (!club) return
-      void shareInvite(club)
+      void shareInvite(club, cardName)
       pushNotice({
         id: uid(),
         kind: 'tribe',
@@ -1095,7 +1086,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
         unread: true,
       })
     },
-    [clubs, pushNotice],
+    [cardName, clubs, pushNotice],
   )
 
   const createClub = useCallback(
@@ -1141,7 +1132,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       setActiveClubId(club.id)
       writeStore('vuna-active-club', club.id)
       setActiveTribePillar(club.pillar)
-      void shareInvite(club)
+      void shareInvite(club, cardName)
       pushNotice({
         id: uid(),
         kind: 'tribe',
@@ -1152,6 +1143,136 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     },
     [avatarUrl, cardName, clubs, firstName, lastInitial, pushNotice],
   )
+
+  const clearInviteQuery = useCallback(() => {
+    const w = safeWindow()
+    if (!w) return
+    try {
+      w.history.replaceState({}, '', w.location.pathname)
+    } catch {
+      /* Mini App */
+    }
+  }, [])
+
+  const dismissInvite = useCallback(() => {
+    setPendingInvite(null)
+    clearInviteQuery()
+  }, [clearInviteQuery])
+
+  const sitFromInvite = useCallback(
+    (club: Club, ref: string | null) => {
+      if (!CATALOG_CLUBS.some((item) => item.id === club.id)) {
+        setCustomClubs((prev) => {
+          if (prev.some((item) => item.inviteSlug === club.inviteSlug)) return prev
+          const next = [...prev, club]
+          writeStore('vuna-custom-clubs', JSON.stringify(next))
+          return next
+        })
+      }
+      setJoinedIds((prev) => {
+        const next = prev.includes(club.id) ? prev : [...prev, club.id]
+        writeStore('vuna-joined-clubs', JSON.stringify(next))
+        return next
+      })
+      setActiveClubId(club.id)
+      writeStore('vuna-active-club', club.id)
+      setActiveTribePillar(club.pillar)
+      setTab('harvest')
+      setPendingInvite(null)
+      clearInviteQuery()
+      const inviteeHandle = cardName
+      let inviteeId = readStore('vuna-device')
+      if (!inviteeId) {
+        inviteeId = uid()
+        writeStore('vuna-device', inviteeId)
+      }
+      if (ref) {
+        void fetch('/api/referrals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inviterHandle: ref,
+            inviteeId,
+            inviteeHandle,
+            clubSlug: club.inviteSlug,
+          }),
+        }).catch(() => {})
+      }
+      const item = {
+        id: uid(),
+        kind: 'tribe' as const,
+        title: `You're in ${club.name}`,
+        body: 'Harvest is showing this tribe.',
+        unread: true,
+      }
+      setInbox((prev) => [item, ...prev])
+      setNotice(item)
+    },
+    [cardName, clearInviteQuery],
+  )
+
+  const acceptInvite = useCallback(() => {
+    const pending = pendingInvite
+    if (!pending?.club) {
+      dismissInvite()
+      return
+    }
+    sitFromInvite(pending.club, pending.ref)
+  }, [dismissInvite, pendingInvite, sitFromInvite])
+
+  const sitInviteRef = useRef(sitFromInvite)
+  sitInviteRef.current = sitFromInvite
+
+  useEffect(() => {
+    const w = safeWindow()
+    if (!w) return
+    const params = new URLSearchParams(w.location.search)
+    const token = params.get('join')
+    if (!token) return
+    const ref = params.get('ref')
+    const ready = params.get('ready') === '1'
+    let cancel = false
+    const custom = readJson<Club[]>('vuna-custom-clubs', [])
+    const known = [...CATALOG_CLUBS, ...custom].find((c) => c.inviteSlug === token || c.id === token) ?? null
+    if (known) {
+      if (ready) sitInviteRef.current(known, ref)
+      else setPendingInvite({ slug: token, ref, club: known })
+      return
+    }
+    void fetch(`/api/tribes?slug=${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        if (!res.ok) return null
+        return (await res.json()) as {
+          name: string
+          line: string
+          live: number
+          inviteSlug: string
+          pillar?: PillarId
+        }
+      })
+      .then((row) => {
+        if (cancel) return
+        const club: Club | null = row
+          ? {
+              id: `invite-${row.inviteSlug}`,
+              inviteSlug: row.inviteSlug,
+              pillar: row.pillar && PILLARS.includes(row.pillar) ? row.pillar : 'FITNESS',
+              name: row.name,
+              line: row.line,
+              live: row.live,
+              members: [],
+            }
+          : null
+        if (club && ready) sitInviteRef.current(club, ref)
+        else setPendingInvite({ slug: token, ref, club })
+      })
+      .catch(() => {
+        if (!cancel) setPendingInvite({ slug: token, ref, club: null })
+      })
+    return () => {
+      cancel = true
+    }
+  }, [])
 
   const optOutTribes = useCallback(() => {
     setJoinedIds([])
@@ -1435,6 +1556,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [transfer.amount, transfer.phone])
 
   const handleBack = useCallback(() => {
+    if (pendingInvite) {
+      dismissInvite()
+      return true
+    }
     if (profileEditOpen) {
       setProfileEditOpen(false)
       return true
@@ -1477,7 +1602,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       return true
     }
     return false
-  }, [profileEditOpen, inboxOpen, giftDraft.open, composer.open, composer.sending, stk.open, transfer.open, logDraft.open, liveOpen, notice, tab])
+  }, [pendingInvite, dismissInvite, profileEditOpen, inboxOpen, giftDraft.open, composer.open, composer.sending, stk.open, transfer.open, logDraft.open, liveOpen, notice, tab])
 
   const confirmedLockKes = lockKesFromCredits(loadCredits())
 
@@ -1569,6 +1694,9 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     leaveClub,
     createClub,
     inviteClub,
+    pendingInvite,
+    acceptInvite,
+    dismissInvite,
     optOutTribes,
     eraseDevice,
     chooseActivity,

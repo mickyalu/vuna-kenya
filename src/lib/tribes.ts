@@ -1,4 +1,5 @@
-import { FACE_PHOTOS } from './avatars'
+import { FACE_PHOTOS } from './avatars.ts'
+import { inviteLink, inviteMessage } from './invite.ts'
 import type { PillarId } from './pillars'
 
 export type TribeMember = {
@@ -174,14 +175,26 @@ export const CATALOG_CLUBS: Club[] = (Object.keys(TRIBES) as PillarId[]).map((id
   clubFromTribe(TRIBES[id], id),
 )
 
-export function inviteUrl(club: Club) {
+export function inviteUrl(club: Club, fromName?: string | null) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
-  return `${origin}/app?join=${encodeURIComponent(club.inviteSlug)}`
+  return inviteLink(origin, club.inviteSlug, fromName)
 }
 
-export async function shareInvite(club: Club) {
-  const url = inviteUrl(club)
-  const text = `Join ${club.name} on VUNA — we lock KES against habits.`
+export async function shareInvite(club: Club, fromName?: string | null) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
+  const url = inviteLink(origin, club.inviteSlug, fromName)
+  const text = inviteMessage(club, fromName)
+  void fetch('/api/tribes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      slug: club.inviteSlug,
+      name: club.name,
+      line: club.line,
+      live: club.live,
+      pillar: club.pillar,
+    }),
+  }).catch(() => {})
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: `${club.name} on VUNA`, text, url })
@@ -197,7 +210,7 @@ export async function shareInvite(club: Club) {
   }
   if (typeof window !== 'undefined') {
     window.open(
-      `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
+      `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,
       '_blank',
       'noopener,noreferrer',
     )

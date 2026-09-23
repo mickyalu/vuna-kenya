@@ -40,7 +40,9 @@ export function markSpaHop() {
 export function shouldSkipAppSplash() {
   if (enteredApp || spaHop) return true
   try {
-    return safeWindow()?.sessionStorage.getItem(SPA_HOP_KEY) === '1'
+    const w = safeWindow()
+    if (w && new URLSearchParams(w.location.search).get('join')) return true
+    return w?.sessionStorage.getItem(SPA_HOP_KEY) === '1'
   } catch {
     return false
   }

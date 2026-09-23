@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { CongratsToast } from './components/CongratsToast'
 import { GiftSheet } from './components/GiftSheet'
+import { JoinInvite } from './components/JoinInvite'
 import { EditProfileSheet } from './components/EditProfileSheet'
 import { LockComposer } from './components/LockComposer'
 import { LogSheet } from './components/LogSheet'
@@ -118,6 +119,7 @@ function Shell() {
         <LogSheet />
         <LockComposer />
         <GiftSheet />
+        <JoinInvite />
         {profileEditOpen ? <EditProfileSheet /> : null}
         <NoticeInbox />
         <CongratsToast />

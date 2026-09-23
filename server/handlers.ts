@@ -13,6 +13,9 @@ import { logError, logInfo, logWarn } from './log.ts'
 import { allowStkPush, bindCheckout, checkoutMsisdn, clearPendingPush, releaseCheckout } from './rate-limit.ts'
 import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts'
 import { giftAccountReference, normalizeRecipientHandle } from '../src/lib/gift.ts'
+import { renderJoinPage } from '../src/lib/invite.ts'
+import { CATALOG_CLUBS } from '../src/lib/tribes.ts'
+import { claimInviteReward, findPublishedTribe, publishTribe, referralBalance } from './referrals.ts'
 import { cronAuthorized, listLocksForPhone, recordGiftEvent, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
@@ -343,6 +346,108 @@ export async function handleFridayWrap(req: Request) {
   return json(result)
 }
 
+function html(body: string) {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
+}
+
+function requestOrigin(req: Request) {
+  const url = new URL(req.url)
+  const proto = req.headers.get('x-forwarded-proto') || url.protocol.replace(':', '')
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || url.host
+  return `${proto}://${host}`
+}
+
+function clubForSlug(slug: string) {
+  const key = decodeURIComponent(slug).trim().toLowerCase()
+  const catalog = CATALOG_CLUBS.find((club) => club.inviteSlug === key || club.id.toLowerCase() === key)
+  if (catalog) {
+    return {
+      name: catalog.name,
+      line: catalog.line,
+      live: catalog.live,
+      inviteSlug: catalog.inviteSlug,
+      pillar: catalog.pillar,
+    }
+  }
+  const published = findPublishedTribe(key)
+  if (!published) return null
+  return {
+    name: published.name,
+    line: published.line,
+    live: published.live,
+    inviteSlug: published.slug,
+    pillar: published.pillar,
+  }
+}
+
+export async function handleJoinPage(req: Request) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return error('Method not allowed', 405)
+  const url = new URL(req.url)
+  const parts = url.pathname.split('/').filter(Boolean)
+  const slug = decodeURIComponent(parts[parts.length - 1] || '')
+  return html(
+    renderJoinPage({
+      origin: requestOrigin(req),
+      slug,
+      club: clubForSlug(slug),
+      ref: url.searchParams.get('ref'),
+    }),
+  )
+}
+
+export async function handlePublicTribe(req: Request) {
+  if (req.method === 'GET') {
+    const slug = new URL(req.url).searchParams.get('slug') || ''
+    const club = clubForSlug(slug)
+    if (!club) return error('Unknown tribe', 404)
+    return json(club)
+  }
+  if (req.method !== 'POST') return error('Method not allowed', 405)
+  let body: { slug?: string; name?: string; line?: string; live?: number; pillar?: string } = {}
+  try {
+    body = (await req.json()) as typeof body
+  } catch {
+    return error('Invalid JSON')
+  }
+  const saved = publishTribe({
+    slug: String(body.slug || ''),
+    name: String(body.name || ''),
+    line: String(body.line || ''),
+    live: Number(body.live || 1),
+    pillar: String(body.pillar || 'FITNESS'),
+  })
+  if (!saved) return error('Name and slug are required.')
+  return json(saved)
+}
+
+export async function handleReferrals(req: Request) {
+  if (req.method === 'GET') {
+    const handle = new URL(req.url).searchParams.get('handle') || ''
+    return json(await referralBalance(handle))
+  }
+  if (req.method !== 'POST') return error('Method not allowed', 405)
+  let body: { inviterHandle?: string; inviteeId?: string; inviteeHandle?: string; clubSlug?: string } = {}
+  try {
+    body = (await req.json()) as typeof body
+  } catch {
+    return error('Invalid JSON')
+  }
+  const result = await claimInviteReward({
+    inviterHandle: String(body.inviterHandle || ''),
+    inviteeId: String(body.inviteeId || ''),
+    inviteeHandle: body.inviteeHandle,
+    clubSlug: String(body.clubSlug || ''),
+  })
+  return json(result)
+}
+
 export async function handleApi(req: Request): Promise<Response | null> {
   const path = new URL(req.url).pathname.replace(/\/+$/, '') || '/'
   if (req.method === 'OPTIONS') {
@@ -363,5 +468,8 @@ export async function handleApi(req: Request): Promise<Response | null> {
   if (path === '/api/locks') return handleLocks(req)
   if (path === '/api/profile/wrap') return handleProfileWrap(req)
   if (path === '/api/cron/friday-wrap') return handleFridayWrap(req)
+  if (path === '/api/referrals') return handleReferrals(req)
+  if (path === '/api/tribes') return handlePublicTribe(req)
+  if (path.startsWith('/join/') || path.startsWith('/api/join/')) return handleJoinPage(req)
   return null
 }

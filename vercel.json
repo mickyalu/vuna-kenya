@@ -5,7 +5,11 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!api/|sw\\.js$|manifest\\.webmanifest$|icons/|assets/|favicon\\.svg$).*)",
+      "source": "/join/:slug",
+      "destination": "/api/join/:slug"
+    },
+    {
+      "source": "/((?!api/|sw\\.js$|manifest\\.webmanifest$|icons/|og/|assets/|favicon\\.svg$).*)",
       "destination": "/index.html"
     }
   ],

@@ -10,7 +10,8 @@ export function vunaApiPlugin(): Plugin {
         if (process.env[key] == null) process.env[key] = value
       }
       server.middlewares.use((req, res, next) => {
-        if (!req.url?.startsWith('/api/')) {
+        const path = req.url?.split('?')[0] || ''
+        if (!path.startsWith('/api/') && !path.startsWith('/join/')) {
           next()
           return
         }

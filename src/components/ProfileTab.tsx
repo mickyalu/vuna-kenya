@@ -59,7 +59,7 @@ export function ProfileTab() {
           KES {giftWallet.toFixed(2)}
         </p>
         <p className="mt-2 text-[12px] leading-snug text-vuna-muted">
-          Paybill credits land here in real time. They never touch protocol lock.
+          Gifts sit here. A friend who joins from your link adds KES 100. None of it touches a protocol lock.
         </p>
       </section>
 

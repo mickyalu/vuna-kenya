@@ -59,12 +59,14 @@ export function TribeChip({
 export function AvatarStack({
   faces,
   size = 36,
+  className = 'justify-center',
 }: {
   faces: { src: string; alt: string }[]
   size?: number
+  className?: string
 }) {
   return (
-    <div className="flex justify-center pl-2">
+    <div className={`flex pl-2 ${className}`}>
       {faces.slice(0, 4).map((face, i) => (
         <span
           key={`${face.alt}-${i}`}
