@@ -138,9 +138,6 @@ export function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-2">
-            <p className="hidden text-[11px] font-semibold tracking-[0.14em] text-[#888888] xl:block">
-              CMA SANDBOX · KENYA
-            </p>
             <button
               type="button"
               onClick={launchApp}
@@ -183,12 +180,12 @@ export function LandingPage() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <AppStoreBadge
                 onClick={() =>
-                  setStoreNote('The App Store listing is coming soon. Use Try Vuna for CMA sandbox access.')
+                  setStoreNote('The App Store listing is coming soon.')
                 }
               />
               <GooglePlayBadge
                 onClick={() =>
-                  setStoreNote('The Google Play listing is coming soon. Use Try Vuna for CMA sandbox access.')
+                  setStoreNote('The Google Play listing is coming soon.')
                 }
               />
             </div>
@@ -198,7 +195,7 @@ export function LandingPage() {
               </p>
             ) : (
               <p className="mt-3 text-[13px] text-[#888888]">
-                iOS and Android listings coming soon. CMA sandbox testers use Try Vuna.
+                iOS and Android listings coming soon.
               </p>
             )}
           </div>
@@ -383,10 +380,6 @@ export function LandingPage() {
             <h2 className="font-display text-[44px] leading-none sm:text-[60px]">
               START BUILDING DISCIPLINE-BACKED WEALTH TODAY.
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-[15px] text-[#888888]">
-              CMA sandbox testers: open Try Vuna, log a habit, and approve the M-Pesa STK. The first
-              lock is a whole shilling.
-            </p>
             <button
               type="button"
               onClick={launchApp}
