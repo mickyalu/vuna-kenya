@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
-import { AVATAR_CHOICES, avatarUrlById, cardholderName } from '../lib/avatars'
+import { useRef, useState } from 'react'
+import { Camera, X } from 'lucide-react'
+import { AVATAR_CHOICES, resolveAvatarUrl, UPLOAD_AVATAR_ID, cardholderName } from '../lib/avatars'
+import { readCardPhoto } from '../lib/card-photo'
 import { useVuna } from '../store/VunaContext'
 import { PersonAvatar } from './PersonAvatar'
 
@@ -10,22 +11,38 @@ export function EditProfileSheet() {
     firstName,
     lastInitial,
     avatarId,
+    uploadedPhoto,
     saveProfile,
   } = useVuna()
 
+  const fileRef = useRef<HTMLInputElement>(null)
   const [draftFirst, setDraftFirst] = useState(firstName)
   const [draftInitial, setDraftInitial] = useState(lastInitial)
   const [draftAvatar, setDraftAvatar] = useState(avatarId)
+  const [draftPhoto, setDraftPhoto] = useState(uploadedPhoto)
   const [error, setError] = useState<string | null>(null)
 
   const previewName = cardholderName(draftFirst, draftInitial)
-  const previewUrl = avatarUrlById(draftAvatar)
+  const previewUrl = resolveAvatarUrl(draftAvatar, draftPhoto)
+  const usingUpload = draftAvatar === UPLOAD_AVATAR_ID && Boolean(draftPhoto)
+
+  async function onPick(file: File) {
+    try {
+      const url = await readCardPhoto(file)
+      setDraftPhoto(url)
+      setDraftAvatar(UPLOAD_AVATAR_ID)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Choose a JPEG or PNG.')
+    }
+  }
 
   function onSave() {
     const result = saveProfile({
       firstName: draftFirst,
       lastInitial: draftInitial,
       avatarId: draftAvatar,
+      photo: draftPhoto,
     })
     if (!result.ok) setError(result.error)
   }
@@ -57,7 +74,12 @@ export function EditProfileSheet() {
         </div>
 
         <div className="mb-5 flex items-center gap-3 rounded-[22px] border border-[#3d4f00] bg-[#141a08] px-4 py-3">
-          <PersonAvatar src={previewUrl} alt={previewName} size={56} />
+          <PersonAvatar
+            src={previewUrl}
+            alt={previewName}
+            size={56}
+            objectPosition={usingUpload ? 'center' : 'center 18%'}
+          />
           <div className="min-w-0">
             <p className="text-[18px] font-semibold tracking-tight text-white">{previewName}</p>
             <p className="text-[12px] text-vuna-muted">On the card as {previewName}</p>
@@ -102,7 +124,50 @@ export function EditProfileSheet() {
         </div>
 
         <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
-          CARD PHOTO
+          YOUR PHOTO
+        </p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          aria-label="Upload a photo"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (file) void onPick(file)
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            if (draftPhoto) setDraftAvatar(UPLOAD_AVATAR_ID)
+            fileRef.current?.click()
+          }}
+          aria-pressed={usingUpload}
+          className={`mb-4 flex w-full items-center gap-3 rounded-2xl p-3 text-left ${
+            usingUpload ? 'bg-[#1f2a00] ring-2 ring-vuna-lime' : 'bg-vuna-raised'
+          }`}
+        >
+          {draftPhoto ? (
+            <PersonAvatar src={draftPhoto} alt="Your photo" size={56} objectPosition="center" />
+          ) : (
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#1a1a1a] text-vuna-lime ring-2 ring-[#CCFF00]">
+              <Camera size={22} />
+            </span>
+          )}
+          <span className="min-w-0">
+            <span className="block text-[15px] font-semibold text-white">
+              {draftPhoto ? 'Your photo' : 'Upload a photo'}
+            </span>
+            <span className="block text-[12px] text-vuna-muted">
+              {draftPhoto ? 'Tap to replace it.' : 'Use a picture from this phone.'}
+            </span>
+          </span>
+        </button>
+
+        <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-vuna-muted">
+          AVATARS
         </p>
         <div className="mb-4 grid grid-cols-4 gap-2">
           {AVATAR_CHOICES.map((face) => {
@@ -115,7 +180,7 @@ export function EditProfileSheet() {
                   setDraftAvatar(face.id)
                   setError(null)
                 }}
-                aria-label={`Use ${face.label} photo`}
+                aria-label={`Use ${face.label} avatar`}
                 aria-pressed={selected}
                 className={`flex flex-col items-center gap-1 rounded-2xl p-1.5 ${
                   selected ? 'bg-[#1f2a00] ring-2 ring-vuna-lime' : 'bg-vuna-raised'

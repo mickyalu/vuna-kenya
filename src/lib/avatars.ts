@@ -16,9 +16,21 @@ export const AVATAR_CHOICES: AvatarChoice[] = [
 ]
 
 export const DEFAULT_AVATAR_ID = 'otieno'
+export const UPLOAD_AVATAR_ID = 'upload'
+const MAX_PHOTO_CHARS = 180_000
+
+export function isUploadedPhoto(value: string | null | undefined): value is string {
+  if (!value) return false
+  return /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=\s]+$/i.test(value) && value.length <= MAX_PHOTO_CHARS
+}
 
 export function avatarUrlById(id: string): string {
   return AVATAR_CHOICES.find((a) => a.id === id)?.url ?? AVATAR_CHOICES[0].url
+}
+
+export function resolveAvatarUrl(id: string, uploaded?: string | null): string {
+  if (id === UPLOAD_AVATAR_ID && isUploadedPhoto(uploaded)) return uploaded
+  return avatarUrlById(id)
 }
 
 export function cardholderName(firstName: string, lastInitial: string) {
@@ -32,10 +44,11 @@ export type ProfileDraft = {
   firstName: string
   lastInitial: string
   avatarId: string
+  photo?: string | null
 }
 
 export type ProfileDraftResult =
-  | { ok: true; firstName: string; lastInitial: string; avatarId: string; cardName: string }
+  | { ok: true; firstName: string; lastInitial: string; avatarId: string; cardName: string; photo: string | null }
   | { ok: false; error: string }
 
 export function parseProfileDraft(input: ProfileDraft): ProfileDraftResult {
@@ -43,8 +56,12 @@ export function parseProfileDraft(input: ProfileDraft): ProfileDraftResult {
   const initial = input.lastInitial.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase()
   if (!first) return { ok: false, error: 'Add a first name for the card.' }
   if (!initial) return { ok: false, error: 'Add a last initial.' }
-  if (!AVATAR_CHOICES.some((a) => a.id === input.avatarId)) {
-    return { ok: false, error: 'Pick a card photo.' }
+  const uploaded = input.avatarId === UPLOAD_AVATAR_ID
+  if (uploaded && !isUploadedPhoto(input.photo)) {
+    return { ok: false, error: 'Choose a photo.' }
+  }
+  if (!uploaded && !AVATAR_CHOICES.some((a) => a.id === input.avatarId)) {
+    return { ok: false, error: 'Pick an avatar.' }
   }
   const titled = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
   return {
@@ -53,6 +70,7 @@ export function parseProfileDraft(input: ProfileDraft): ProfileDraftResult {
     lastInitial: initial,
     avatarId: input.avatarId,
     cardName: cardholderName(titled, initial),
+    photo: uploaded ? input.photo! : null,
   }
 }
 

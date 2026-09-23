@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS, parseProfileDraft, type ProfileDraft, type ProfileDraftResult } from '../lib/avatars'
+import { AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS, isUploadedPhoto, parseProfileDraft, resolveAvatarUrl, UPLOAD_AVATAR_ID, type ProfileDraft, type ProfileDraftResult } from '../lib/avatars'
 import {
   CATALOG_CLUBS,
   clubFromTribe,
@@ -331,6 +331,7 @@ type VunaState = {
   setLiveOpen: (open: boolean) => void
   avatarId: string
   avatarUrl: string
+  uploadedPhoto: string | null
   setAvatarId: (id: string) => void
   monthlyVunas: number
 }
@@ -424,9 +425,15 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const [liveOpen, setLiveOpen] = useState(false)
   const [avatarId, setAvatarIdState] = useState(() => {
     const stored = readStore('vuna-avatar')
+    const photo = readStore('vuna-avatar-photo')
+    if (stored === UPLOAD_AVATAR_ID && isUploadedPhoto(photo)) return UPLOAD_AVATAR_ID
     return AVATAR_CHOICES.some((a) => a.id === stored) ? stored! : DEFAULT_AVATAR_ID
   })
-  const avatarUrl = avatarUrlById(avatarId)
+  const [uploadedPhoto, setUploadedPhoto] = useState(() => {
+    const photo = readStore('vuna-avatar-photo')
+    return isUploadedPhoto(photo) ? photo : null
+  })
+  const avatarUrl = resolveAvatarUrl(avatarId, uploadedPhoto)
   const [mpesaPhone, setMpesaPhoneState] = useState('')
   const [mpesaMasked, setMpesaMasked] = useState(
     () => readStore('vuna-mpesa-masked') || '',
@@ -1415,6 +1422,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     writeStore('vuna-last-initial', parsed.lastInitial)
     setAvatarIdState(parsed.avatarId)
     writeStore('vuna-avatar', parsed.avatarId)
+    if (parsed.photo) {
+      setUploadedPhoto(parsed.photo)
+      writeStore('vuna-avatar-photo', parsed.photo)
+    }
     setProfileEditOpen(false)
     pushNotice({
       id: uid(),
@@ -1776,6 +1787,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setLiveOpen,
     avatarId,
     avatarUrl,
+    uploadedPhoto,
     setAvatarId,
     monthlyVunas: totalWins,
   }
