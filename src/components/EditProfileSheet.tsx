@@ -76,13 +76,15 @@ export function EditProfileSheet() {
         <div className="mb-5 flex items-center gap-3 rounded-[22px] border border-[#3d4f00] bg-[#141a08] px-4 py-3">
           <PersonAvatar
             src={previewUrl}
-            alt={previewName}
+            alt={previewName || 'You'}
             size={56}
             objectPosition={usingUpload ? 'center' : 'center 18%'}
           />
           <div className="min-w-0">
-            <p className="text-[18px] font-semibold tracking-tight text-white">{previewName}</p>
-            <p className="text-[12px] text-vuna-muted">On the card as {previewName}</p>
+            <p className="text-[18px] font-semibold tracking-tight text-white">{previewName ?? 'Your name'}</p>
+            <p className="text-[12px] text-vuna-muted">
+              {previewName ? `On the card as ${previewName}` : 'Save to put your name on the card.'}
+            </p>
           </div>
         </div>
 

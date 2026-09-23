@@ -13,6 +13,7 @@ export function ProtocolCard() {
     avatarUrl,
     balanceHidden,
     toggleBalanceHidden,
+    openProfileEdit,
   } = useVuna()
 
   return (
@@ -88,13 +89,20 @@ export function ProtocolCard() {
       </div>
 
       <div className="relative mt-3 flex items-center justify-between border-t border-white/10 pt-2.5">
-        <div className="flex items-center gap-2">
-          <PersonAvatar src={avatarUrl} alt={cardName} size={28} />
-          <div>
+        <button
+          type="button"
+          onClick={openProfileEdit}
+          className="flex min-w-0 items-center gap-2 text-left"
+          aria-label={cardName ? `Cardholder ${cardName}` : 'Add your name'}
+        >
+          <PersonAvatar src={avatarUrl} alt={cardName || 'You'} size={28} />
+          <div className="min-w-0">
             <p className="text-[9px] tracking-[0.18em] text-[#8a9a70]">CARDHOLDER</p>
-            <p className="text-[13px] font-semibold tracking-[0.08em] text-white">{cardName}</p>
+            <p className={`truncate text-[13px] font-semibold tracking-[0.08em] ${cardName ? 'text-white' : 'text-vuna-lime'}`}>
+              {cardName ?? 'Add your name'}
+            </p>
           </div>
-        </div>
+        </button>
         <p className="text-[10px] font-semibold tracking-[0.16em] text-vuna-lime">KES RAIL</p>
       </div>
     </section>

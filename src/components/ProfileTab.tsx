@@ -42,13 +42,17 @@ export function ProfileTab() {
           CARDHOLDER
         </span>
         <div className="mt-2 flex items-center gap-3">
-          <PersonAvatar src={avatarUrl} alt={cardName} size={44} />
+          <PersonAvatar src={avatarUrl} alt={cardName || 'You'} size={44} />
           <div className="min-w-0 flex-1">
-            <p className="text-[18px] font-semibold tracking-tight text-white">{cardName}</p>
-            <p className="mt-0.5 text-[12px] text-vuna-muted">On the card as {cardName}</p>
+            <p className="text-[18px] font-semibold tracking-tight text-white">
+              {cardName ?? 'Add your name'}
+            </p>
+            <p className="mt-0.5 text-[12px] text-vuna-muted">
+              {cardName ? `On the card as ${cardName}` : 'It shows on the card after you save.'}
+            </p>
           </div>
           <span className="shrink-0 rounded-full border border-vuna-lime px-3 py-1.5 text-[13px] font-semibold text-vuna-lime">
-            Edit
+            {cardName ? 'Edit' : 'Add'}
           </span>
         </div>
       </button>

@@ -5,6 +5,8 @@ import { cardholderName, isUploadedPhoto, parseProfileDraft, UPLOAD_AVATAR_ID } 
 test('cardholder name is First.I', () => {
   assert.equal(cardholderName('amina', 'k'), 'Amina.K')
   assert.equal(cardholderName('  Michael ', 'a'), 'Michael.A')
+  assert.equal(cardholderName('', 'A'), null)
+  assert.equal(cardholderName('Amina', ''), null)
 })
 
 test('profile draft rejects an empty first name', () => {

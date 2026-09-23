@@ -33,11 +33,16 @@ export function resolveAvatarUrl(id: string, uploaded?: string | null): string {
   return avatarUrlById(id)
 }
 
-export function cardholderName(firstName: string, lastInitial: string) {
-  const raw = firstName.trim() || 'Michael'
+export function cardholderName(firstName: string, lastInitial: string): string | null {
+  const raw = firstName.trim()
+  const initial = lastInitial.trim().charAt(0).toUpperCase()
+  if (!raw || !initial) return null
   const first = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
-  const initial = (lastInitial.trim().charAt(0) || 'A').toUpperCase()
   return `${first}.${initial}`
+}
+
+export function youHandle(cardName: string | null) {
+  return cardName ? `@${cardName}` : 'You'
 }
 
 export type ProfileDraft = {
@@ -64,12 +69,14 @@ export function parseProfileDraft(input: ProfileDraft): ProfileDraftResult {
     return { ok: false, error: 'Pick an avatar.' }
   }
   const titled = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+  const cardName = cardholderName(titled, initial)
+  if (!cardName) return { ok: false, error: 'Add a first name for the card.' }
   return {
     ok: true,
     firstName: titled,
     lastInitial: initial,
     avatarId: input.avatarId,
-    cardName: cardholderName(titled, initial),
+    cardName,
     photo: uploaded ? input.photo! : null,
   }
 }

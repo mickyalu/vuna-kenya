@@ -38,7 +38,7 @@ export function HarvestTab() {
             tribe={tribe}
             onClick={openTribes}
             youUrl={avatarUrl}
-            youName={cardName}
+            youName={cardName ?? undefined}
             compact
             label="Your tribe"
           />

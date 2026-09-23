@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS, isUploadedPhoto, parseProfileDraft, resolveAvatarUrl, UPLOAD_AVATAR_ID, type ProfileDraft, type ProfileDraftResult } from '../lib/avatars'
+import { AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_PHOTOS, isUploadedPhoto, parseProfileDraft, resolveAvatarUrl, UPLOAD_AVATAR_ID, youHandle, type ProfileDraft, type ProfileDraftResult } from '../lib/avatars'
 import {
   CATALOG_CLUBS,
   clubFromTribe,
@@ -290,7 +290,7 @@ type VunaState = {
   setFirstName: (name: string) => void
   lastInitial: string
   setLastInitial: (initial: string) => void
-  cardName: string
+  cardName: string | null
   profileEditOpen: boolean
   openProfileEdit: () => void
   closeProfileEdit: () => void
@@ -384,15 +384,17 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   })
   const [inbox, setInbox] = useState<InAppNotice[]>([SEED_GIFT_NOTICE])
   const [inboxOpen, setInboxOpen] = useState(false)
-  const [firstName, setFirstNameState] = useState(
-    () => readStore('vuna-first-name') || 'Michael',
-  )
+  const [firstName, setFirstNameState] = useState(() => readStore('vuna-first-name') || '')
   const [lastInitial, setLastInitialState] = useState(
-    () => (readStore('vuna-last-initial') || 'A').slice(0, 1).toUpperCase(),
+    () => (readStore('vuna-last-initial') || '').slice(0, 1).toUpperCase(),
   )
   const cardName = cardholderName(firstName, lastInitial)
 
   useEffect(() => {
+    if (!cardName) {
+      setReferralKes(0)
+      return
+    }
     let cancel = false
     void fetch(`/api/referrals?handle=${encodeURIComponent(cardName)}`)
       .then(async (res) => {
@@ -625,7 +627,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           setFeed((prev) => [
             {
               id: uid(),
-              handle: `@${cardName}`,
+              handle: youHandle(cardName),
               tribe: activeClub.name,
               clubId: activeClub.id,
               avatar: avatarUrl,
@@ -672,7 +674,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           {
             id: uid(),
             kind: 'gift',
-            handle: `@${cardName}`,
+            handle: youHandle(cardName),
             tribe: activeClub.name,
             clubId: activeClub.id,
             avatar: avatarUrl,
@@ -683,7 +685,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
             saluted: false,
             visibility: 'public',
             giftKes: status.amountKes,
-            giftFrom: `@${cardName}`,
+            giftFrom: youHandle(cardName),
             giftFromAvatar: avatarUrl,
             giftTo: toHandle,
             giftReply: null,
@@ -915,7 +917,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     setFeed((prev) => [
       {
         id: uid(),
-        handle: `@${cardName}`,
+        handle: youHandle(cardName),
         tribe: activeClub.name,
         clubId: activeClub.id,
         avatar: avatarUrl,
@@ -951,7 +953,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: wrapEnabled, name: cardName }),
+          body: JSON.stringify({ enabled: wrapEnabled, name: cardName || '' }),
         }),
       )
       .catch(() => {})
@@ -1057,7 +1059,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       setFeed((prev) =>
         prev.map((item) =>
           item.id === postId
-            ? { ...item, giftReply: note, giftReplyFrom: `@${cardName}` }
+            ? { ...item, giftReply: note, giftReplyFrom: youHandle(cardName) }
             : item,
         ),
       )
@@ -1086,7 +1088,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
     () =>
       referralKes +
       feed
-        .filter((p) => p.kind === 'gift' && (p.giftTo === 'you' || p.giftTo === `@${cardName}`))
+        .filter((p) => p.kind === 'gift' && (p.giftTo === 'you' || p.giftTo === youHandle(cardName)))
         .reduce((sum, p) => sum + (p.giftKes ?? 0), 0),
     [feed, cardName, referralKes],
   )
@@ -1167,9 +1169,9 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       const id = `club-${uid()}`
       const you = avatarUrl
         ? {
-            initials: `${(firstName[0] || 'M').toUpperCase()}${lastInitial}`,
+            initials: `${(firstName[0] || 'Y').toUpperCase()}${lastInitial || ''}`,
             tone: '#6b4f3a',
-            name: cardName,
+            name: cardName || 'You',
             photo: avatarUrl,
           }
         : null
@@ -1399,9 +1401,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const setFirstName = useCallback((name: string) => {
-    const next = name.trim() || 'Michael'
+    const next = name.trim()
     setFirstNameState(next)
-    writeStore('vuna-first-name', next)
+    if (next) writeStore('vuna-first-name', next)
+    else removeStore('vuna-first-name')
   }, [])
 
   const setLastInitial = useCallback((initial: string) => {
@@ -1458,7 +1461,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: v, name: cardName }),
+      body: JSON.stringify({ enabled: v, name: cardName || '' }),
     }).catch(() => {})
     pushNotice({
       id: uid(),

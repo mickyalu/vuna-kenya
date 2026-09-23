@@ -17,7 +17,6 @@ import { applyPendingLandingScroll, goApp, goLanding, goSection } from '../lib/r
 import { later } from '../lib/runtime'
 import { MMF_ANNUAL_RATE, projectHabitYield } from '../lib/yield'
 import { KesAmount } from '../components/KesAmount'
-import { PersonAvatar } from '../components/PersonAvatar'
 import { VunaMark } from '../components/VunaMark'
 import { useYieldTick } from '../lib/useYieldTick'
 
@@ -764,8 +763,7 @@ function HarvestPreview() {
         </p>
         <div className="mt-2.5 flex items-center justify-between border-t border-white/10 pt-2">
           <div className="flex items-center gap-2">
-            <PersonAvatar src="/faces/otieno.jpg" alt="Michael.A" size={24} />
-            <p className="text-[12px] font-semibold text-white">Michael.A</p>
+            <p className="text-[12px] font-semibold text-[#8a9a70]">Your name</p>
           </div>
           <p className="text-[10px] font-semibold tracking-[0.16em] text-[#CCFF00]">KES RAIL</p>
         </div>

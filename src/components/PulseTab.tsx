@@ -30,7 +30,7 @@ export function PulseTab() {
   } = useVuna()
 
   const tribe = activeClub
-  const youHandle = `@${cardName}`
+  const youHandle = cardName ? `@${cardName}` : 'You'
   const circleFeed = feed.filter((post) => post.clubId === tribe.id)
   const circleLeaders = leaders.filter((row) => row.clubId === tribe.id)
 
