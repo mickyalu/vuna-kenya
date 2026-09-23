@@ -23,6 +23,8 @@ export type PublicTribe = {
   line: string
   live: number
   pillar: string
+  vertical: string
+  access: 'public' | 'private'
 }
 
 function empty(): Store {
@@ -60,12 +62,15 @@ export function publishTribe(tribe: PublicTribe) {
   const name = tribe.name.trim().slice(0, 60)
   if (!slug || !name) return null
   const data = load()
+  const vertical = (tribe.vertical || '').trim().replace(/\s+/g, ' ').slice(0, 40)
   const next: PublicTribe = {
     slug,
     name,
-    line: tribe.line.trim().slice(0, 140) || 'A VUNA circle.',
+    line: tribe.line.trim().slice(0, 140) || vertical || 'A VUNA circle.',
     live: Number.isFinite(tribe.live) ? Math.max(1, Math.round(tribe.live)) : 1,
     pillar: tribe.pillar.trim().slice(0, 32) || 'FITNESS',
+    vertical,
+    access: tribe.access === 'private' ? 'private' : 'public',
   }
   data.tribes = [next, ...data.tribes.filter((item) => item.slug !== slug)]
   save(data)
@@ -75,6 +80,10 @@ export function publishTribe(tribe: PublicTribe) {
 export function findPublishedTribe(slug: string) {
   const key = slug.trim().toLowerCase()
   return load().tribes.find((item) => item.slug === key) ?? null
+}
+
+export function listPublicTribes() {
+  return load().tribes.filter((item) => item.access !== 'private')
 }
 
 function supabaseReady() {

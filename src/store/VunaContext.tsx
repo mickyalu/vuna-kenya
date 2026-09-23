@@ -12,6 +12,7 @@ import { avatarUrlById, AVATAR_CHOICES, cardholderName, DEFAULT_AVATAR_ID, FACE_
 import {
   CATALOG_CLUBS,
   clubFromTribe,
+  publishClub,
   shareInvite,
   uniqueInviteSlug,
   type Club,
@@ -65,6 +66,33 @@ function uid() {
     return crypto.randomUUID()
   }
   return `vuna-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+type DirectoryTribe = {
+  name: string
+  line: string
+  live: number
+  inviteSlug: string
+  pillar?: string
+  vertical?: string
+}
+
+function clubFromDirectory(row: DirectoryTribe): Club | null {
+  const slug = row.inviteSlug?.trim()
+  const name = row.name?.trim()
+  if (!slug || !name) return null
+  const pillar = row.pillar && (PILLARS as string[]).includes(row.pillar) ? (row.pillar as PillarId) : 'FITNESS'
+  return {
+    id: `dir-${slug}`,
+    inviteSlug: slug,
+    pillar,
+    name,
+    line: row.line || '',
+    live: row.live || 1,
+    members: [],
+    vertical: row.vertical || undefined,
+    access: 'public',
+  }
 }
 
 function emptyLine(): ProtocolLine {
@@ -277,7 +305,13 @@ type VunaState = {
   setActiveClub: (id: string) => void
   joinClub: (id: string) => void
   leaveClub: (id: string) => void
-  createClub: (input: { name: string; line: string; pillar: PillarId }) => void
+  createClub: (input: {
+    name: string
+    line: string
+    pillar: PillarId
+    vertical: string
+    access: 'public' | 'private'
+  }) => Club | null
   inviteClub: (id: string) => void
   pendingInvite: { slug: string; ref: string | null; club: Club | null } | null
   acceptInvite: () => void
@@ -378,6 +412,7 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   )
   const [activeTribePillar, setActiveTribePillar] = useState<PillarId>('FITNESS')
   const [customClubs, setCustomClubs] = useState<Club[]>(() => readJson<Club[]>('vuna-custom-clubs', []))
+  const [directory, setDirectory] = useState<Club[]>([])
   const [joinedIds, setJoinedIds] = useState<string[]>(() => {
     const stored = readJson<string[]>('vuna-joined-clubs', ['FITNESS'])
     return stored.length ? stored : ['FITNESS']
@@ -496,10 +531,38 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   const estimatedHarvest = deposits + yieldEarned
   const progressPct = Math.min(100, (deposits / GOAL_TARGET_KES) * 100)
 
+  useEffect(() => {
+    let cancel = false
+    void fetch('/api/tribes')
+      .then(async (res) => {
+        if (!res.ok) return { tribes: [] as DirectoryTribe[] }
+        return (await res.json()) as { tribes?: DirectoryTribe[] }
+      })
+      .then((body) => {
+        if (cancel) return
+        setDirectory(
+          (body.tribes ?? [])
+            .map(clubFromDirectory)
+            .filter((club): club is Club => Boolean(club)),
+        )
+      })
+      .catch(() => {})
+    return () => {
+      cancel = true
+    }
+  }, [])
+
   const clubs = useMemo(() => {
-    const extra = customClubs.filter((club) => !CATALOG_CLUBS.some((item) => item.id === club.id))
+    const seen = new Set(CATALOG_CLUBS.map((club) => club.inviteSlug))
+    const extra: Club[] = []
+    for (const club of [...customClubs, ...directory]) {
+      if (CATALOG_CLUBS.some((item) => item.id === club.id)) continue
+      if (seen.has(club.inviteSlug)) continue
+      seen.add(club.inviteSlug)
+      extra.push(club)
+    }
     return [...CATALOG_CLUBS, ...extra]
-  }, [customClubs])
+  }, [customClubs, directory])
 
   const activeClub = useMemo(() => {
     return (
@@ -1090,9 +1153,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
   )
 
   const createClub = useCallback(
-    (input: { name: string; line: string; pillar: PillarId }) => {
+    (input: { name: string; line: string; pillar: PillarId; vertical: string; access: 'public' | 'private' }) => {
       const name = input.name.trim()
-      if (!name) return
+      const vertical = input.vertical.trim().slice(0, 40)
+      if (!name || !vertical) return null
       const id = `club-${uid()}`
       const you = avatarUrl
         ? {
@@ -1107,13 +1171,15 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           {
             pillar: input.pillar,
             name,
-            line: input.line.trim() || 'A VUNA circle.',
+            line: input.line.trim() || vertical,
             live: 1,
             members: you ? [you] : [],
           },
           id,
         ),
         createdByYou: true,
+        vertical,
+        access: input.access,
         inviteSlug: uniqueInviteSlug(
           name,
           clubs.map((item) => item.inviteSlug),
@@ -1132,16 +1198,10 @@ export function VunaProvider({ children }: { children: ReactNode }) {
       setActiveClubId(club.id)
       writeStore('vuna-active-club', club.id)
       setActiveTribePillar(club.pillar)
-      void shareInvite(club, cardName)
-      pushNotice({
-        id: uid(),
-        kind: 'tribe',
-        title: `${club.name} is live`,
-        body: 'Invite link copied. Send it to friends or a community — same motion as a Strava club.',
-        unread: true,
-      })
+      publishClub(club)
+      return club
     },
-    [avatarUrl, cardName, clubs, firstName, lastInitial, pushNotice],
+    [avatarUrl, cardName, clubs, firstName, lastInitial],
   )
 
   const clearInviteQuery = useCallback(() => {
@@ -1248,6 +1308,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
           live: number
           inviteSlug: string
           pillar?: PillarId
+          vertical?: string
+          access?: 'public' | 'private'
         }
       })
       .then((row) => {
@@ -1261,6 +1323,8 @@ export function VunaProvider({ children }: { children: ReactNode }) {
               line: row.line,
               live: row.live,
               members: [],
+              vertical: row.vertical || undefined,
+              access: row.access === 'private' ? 'private' : 'public',
             }
           : null
         if (club && ready) sitInviteRef.current(club, ref)

@@ -17,10 +17,37 @@ export type Tribe = {
   members: TribeMember[]
 }
 
+export type ClubAccess = 'public' | 'private'
+
 export type Club = Tribe & {
   id: string
   inviteSlug: string
   createdByYou?: boolean
+  vertical?: string
+  access?: ClubAccess
+}
+
+/** Small focuses under a pillar. A circle picks one, or types its own. */
+export const PILLAR_VERTICALS: Record<PillarId, string[]> = {
+  FITNESS: ['Morning run', 'Gym', 'Yoga', 'Walk', 'Cycling'],
+  HEALTH: ['Sleep', 'Meds', 'Recovery', 'Checkup'],
+  HABITS: ['Wake up', 'Journal', 'No phone', 'Cold shower'],
+  LIFESTYLE: ['Meal prep', 'Home', 'Family', 'Saturday'],
+  RELATIONSHIP: ['Call home', 'Date night', 'Check in'],
+  FINANCES: ['M-Pesa save', 'Budget', 'Give'],
+  CAREER: ['Deep work', 'Clients', 'Skill'],
+  FAITH: ['Prayer', 'Scripture', 'Fellowship'],
+  LEARNING: ['Reading', 'Language', 'Course'],
+  COMMUNITY: ['Show up', 'Volunteer', 'Host'],
+  REST: ['Wind down', 'No screens', 'Early sleep'],
+  NUTRITION: ['Cook at home', 'Water', 'Protein'],
+}
+
+export function chosenVertical(chip: string, typed: string) {
+  const custom = typed.trim().replace(/\s+/g, ' ').slice(0, 40)
+  if (custom) return custom
+  const picked = chip.trim().slice(0, 40)
+  return picked || null
 }
 
 function mate(name: keyof typeof FACE_PHOTOS, initials: string, tone: string): TribeMember {
@@ -180,10 +207,7 @@ export function inviteUrl(club: Club, fromName?: string | null) {
   return inviteLink(origin, club.inviteSlug, fromName)
 }
 
-export async function shareInvite(club: Club, fromName?: string | null) {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
-  const url = inviteLink(origin, club.inviteSlug, fromName)
-  const text = inviteMessage(club, fromName)
+export function publishClub(club: Club) {
   void fetch('/api/tribes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -193,8 +217,17 @@ export async function shareInvite(club: Club, fromName?: string | null) {
       line: club.line,
       live: club.live,
       pillar: club.pillar,
+      vertical: club.vertical || '',
+      access: club.access === 'private' ? 'private' : 'public',
     }),
   }).catch(() => {})
+}
+
+export async function shareInvite(club: Club, fromName?: string | null) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vuna.app'
+  const url = inviteLink(origin, club.inviteSlug, fromName)
+  const text = inviteMessage(club, fromName)
+  publishClub(club)
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: `${club.name} on VUNA`, text, url })

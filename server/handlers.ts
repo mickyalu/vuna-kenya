@@ -15,7 +15,7 @@ import { cookieHeader, putMsisdn, readMsisdn, resolveMsisdn } from './session.ts
 import { giftAccountReference, normalizeRecipientHandle } from '../src/lib/gift.ts'
 import { renderJoinPage } from '../src/lib/invite.ts'
 import { CATALOG_CLUBS } from '../src/lib/tribes.ts'
-import { claimInviteReward, findPublishedTribe, publishTribe, referralBalance } from './referrals.ts'
+import { claimInviteReward, findPublishedTribe, listPublicTribes, publishTribe, referralBalance } from './referrals.ts'
 import { cronAuthorized, listLocksForPhone, recordGiftEvent, recordLockEvent, runFridayWrap, upsertWrapProfile } from './wrap.ts'
 
 function json(data: unknown, status = 200, extra?: Record<string, string>) {
@@ -374,6 +374,8 @@ function clubForSlug(slug: string) {
       live: catalog.live,
       inviteSlug: catalog.inviteSlug,
       pillar: catalog.pillar,
+      vertical: catalog.vertical || '',
+      access: catalog.access === 'private' ? 'private' : 'public',
     }
   }
   const published = findPublishedTribe(key)
@@ -384,6 +386,8 @@ function clubForSlug(slug: string) {
     live: published.live,
     inviteSlug: published.slug,
     pillar: published.pillar,
+    vertical: published.vertical || '',
+    access: published.access === 'private' ? 'private' : 'public',
   }
 }
 
@@ -405,12 +409,33 @@ export async function handleJoinPage(req: Request) {
 export async function handlePublicTribe(req: Request) {
   if (req.method === 'GET') {
     const slug = new URL(req.url).searchParams.get('slug') || ''
+    if (!slug) {
+      return json({
+        tribes: listPublicTribes().map((tribe) => ({
+          name: tribe.name,
+          line: tribe.line,
+          live: tribe.live,
+          inviteSlug: tribe.slug,
+          pillar: tribe.pillar,
+          vertical: tribe.vertical,
+          access: 'public' as const,
+        })),
+      })
+    }
     const club = clubForSlug(slug)
     if (!club) return error('Unknown tribe', 404)
     return json(club)
   }
   if (req.method !== 'POST') return error('Method not allowed', 405)
-  let body: { slug?: string; name?: string; line?: string; live?: number; pillar?: string } = {}
+  let body: {
+    slug?: string
+    name?: string
+    line?: string
+    live?: number
+    pillar?: string
+    vertical?: string
+    access?: string
+  } = {}
   try {
     body = (await req.json()) as typeof body
   } catch {
@@ -422,6 +447,8 @@ export async function handlePublicTribe(req: Request) {
     line: String(body.line || ''),
     live: Number(body.live || 1),
     pillar: String(body.pillar || 'FITNESS'),
+    vertical: String(body.vertical || ''),
+    access: body.access === 'private' ? 'private' : 'public',
   })
   if (!saved) return error('Name and slug are required.')
   return json(saved)

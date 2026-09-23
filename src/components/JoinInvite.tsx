@@ -22,6 +22,7 @@ export function JoinInvite() {
           <>
             <p className="text-[12px] font-semibold tracking-[0.16em] text-vuna-lime">VUNA · A SEAT IS OPEN</p>
             <h1 className="mt-3 font-display text-[72px] leading-[0.9] text-white">{club.name}</h1>
+            {club.vertical ? <p className="mt-3 text-[16px] font-semibold text-white">{club.vertical}</p> : null}
             <p className="mt-4 text-[16px] leading-snug text-[#bdbdbd]">{club.line}</p>
             <p className="mt-2 text-[16px] leading-snug text-[#bdbdbd]">{people}</p>
             {pendingInvite.ref ? (
